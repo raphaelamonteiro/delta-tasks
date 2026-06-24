@@ -20,6 +20,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     finally:
         stop_logger()
 
+
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(

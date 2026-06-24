@@ -9,6 +9,7 @@ naming_convention = {
     "pk": "pk_%(table_name)s",
 }
 
+
 class Base(DeclarativeBase):
     """Base class for SQLAlchemy models."""
 

@@ -19,7 +19,9 @@ async def init_postgres_db() -> None:
             await _run_migrations()
             return
         except Exception as e:
-            get_logger("app.db.postgres").error(f"[{_ + 1}] Error connecting to database: {e.with_traceback(None)}")
+            get_logger("app.db.postgres").error(
+                f"[{_ + 1}] Error connecting to database: {e.with_traceback(None)}"
+            )
             await asyncio.sleep(0.5)
 
 
@@ -30,17 +32,23 @@ async def close_postgres_db() -> None:
 async def _create_db_if_not_exists() -> None:
     settings = get_settings()
     engine = create_async_engine(settings.database_server_url, isolation_level="AUTOCOMMIT")
-    get_logger("app.db.postgres").info(f"Attemting to connect to database {settings.POSTGRES_DB}...")
+    get_logger("app.db.postgres").info(
+        f"Attemting to connect to database {settings.POSTGRES_DB}..."
+    )
     async with engine.connect() as conn:
         result = await conn.execute(
             text("SELECT 1 FROM pg_database WHERE datname=:name"), {"name": settings.POSTGRES_DB}
         )
         if not result.scalar():
-            get_logger("app.db.postgres").info(f"Database {settings.POSTGRES_DB} not found. Creating database...")
+            get_logger("app.db.postgres").info(
+                f"Database {settings.POSTGRES_DB} not found. Creating database..."
+            )
             await conn.execute(
                 text(f'CREATE DATABASE "{settings.POSTGRES_DB}" OWNER {settings.POSTGRES_USER}')
             )
-            get_logger("app.db.postgres").info(f"Database {settings.POSTGRES_DB} created successfully.")
+            get_logger("app.db.postgres").info(
+                f"Database {settings.POSTGRES_DB} created successfully."
+            )
 
 
 async def _run_migrations() -> None:

@@ -1,12 +1,12 @@
 import asyncio
 from logging.config import fileConfig
 
+from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from alembic import context
 from app.config import get_settings
+from app.db import models  # registra os modelos em Base.metadata para o autogenerate
 from app.db.base import Base
-
 
 config = context.config
 if config.config_file_name is not None:

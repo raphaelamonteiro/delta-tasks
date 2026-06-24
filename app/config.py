@@ -85,11 +85,11 @@ class Settings(BaseSettings):
     @property
     def password_reset_token_timedelta(self) -> timedelta:
         return timedelta(minutes=self.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES)
-    
+
     @property
     def invite_token_timedelta(self) -> timedelta:
         return timedelta(hours=self.INVITE_TOKEN_EXPIRE_HOURS)
-    
+
     RESET_TOKEN_HMAC_SECRET: str = "your_reset_token_hmac_secret"
 
     # Email (Resend)
