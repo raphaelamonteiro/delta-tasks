@@ -1,11 +1,12 @@
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI
 
 from app.config import get_settings
 from app.core.logger import get_logger, stop_logger
 from app.db.init_db import init_postgres_db
+from app.domains.auth.router import auth_router
 
 
 @asynccontextmanager
@@ -29,4 +30,5 @@ def create_app() -> FastAPI:
         version=settings.PROJECT_VERSION,
         lifespan=lifespan,
     )
+    app.include_router(auth_router)
     return app

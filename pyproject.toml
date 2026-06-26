@@ -17,7 +17,7 @@ sqlalchemy = { extras = ["asyncio"], version = "^2.0.36" }
 asyncpg = ">=0.31.0"
 alembic = "^1.14.0"
 pyjwt = { extras = ["crypto"], version = "^2.10.0" }
-passlib = { extras = ["bcrypt"], version = "^1.7.4" }
+passlib = {version = "^1.7.4", extras = ["argon2", "bcrypt"]}
 python-multipart = "^0.0.12"
 resend = "^2.4.0"
 
