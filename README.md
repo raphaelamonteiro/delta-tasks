@@ -20,7 +20,14 @@ Gerenciador de tarefas ágil baseado no modelo Kanban.
 
 ## 🖋️ Diagrama
 <a id="diagrama"></a>
-🚧 Em desenvolvimento...
+
+Diagrama de entidade-relacionamento do banco de dados (gerado no [dbdiagram.io](https://dbdiagram.io) a partir de [`docs/diagrama.dbml`](docs/diagrama.dbml)):
+
+<div align="center">
+
+![Diagrama do banco de dados Delta Tasks](docs/uml.png)
+
+</div>
 
 
 ## 🛠️ Tecnologias
