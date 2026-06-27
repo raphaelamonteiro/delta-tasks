@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +16,13 @@ class AuthRepository:
     async def get_by_email(self, email: str) -> User | None:
         result = await self.db.execute(select(User).where(User.email == email))
         return result.scalars().first()
+
+    async def get_by_id(self, user_id: UUID) -> User | None:
+        return await self.db.get(User, user_id)
+
+    async def update_password_hash(self, user: User, password_hash: str) -> None:
+        user.password_hash = password_hash
+        await self.db.commit()
 
     async def create(self, dto: CreateUserDTO) -> User:
         user = User(

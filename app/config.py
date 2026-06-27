@@ -64,6 +64,11 @@ class Settings(BaseSettings):
     SESSION_EXPIRE_DAYS: int = 180
     DEFAULT_ROLE_NAME: str = "user"
 
+    # First admin bootstrap (used by `make seed`)
+    SEED_ADMIN_NAME: str = "Admin"
+    SEED_ADMIN_EMAIL: str = "admin@deltatask.local"
+    SEED_ADMIN_PASSWORD: str = "change-me-please"
+
     @property
     def access_token_timedelta(self) -> timedelta:
         return timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES)

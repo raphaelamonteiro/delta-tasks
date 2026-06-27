@@ -44,6 +44,9 @@ echo "✅ PostgreSQL is ready."
 echo "🔄 Running Alembic migrations..."
 alembic upgrade head
 
+echo "🌱 Seeding initial admin (idempotent)..."
+python -m app.seed.run_seed
+
 echo "🚀 Starting FastAPI..."
 if [ "${UVICORN_RELOAD:-false}" = "true" ]; then
   exec uvicorn app.main:create_app \

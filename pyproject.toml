@@ -20,6 +20,7 @@ pyjwt = { extras = ["crypto"], version = "^2.10.0" }
 passlib = {version = "^1.7.4", extras = ["argon2", "bcrypt"]}
 python-multipart = "^0.0.12"
 resend = "^2.4.0"
+types-passlib = "^1.7.7.20260211"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.8.0"
@@ -27,8 +28,8 @@ mypy = "^1.13.0"
 bandit = "^1.8.0"
 pytest = "^8.3.0"
 pytest-asyncio = "^0.24.0"
-pytest-env = "^1.1.5"
 httpx = "^0.28.0"
+python-dotenv = "^1.0"
 
 [build-system]
 requires = ["poetry-core>=1.8.0"]
@@ -111,10 +112,8 @@ warn_required_dynamic_aliases = true
 pythonpath = ["."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 addopts = "--import-mode=importlib"
-env = [
-    "ENVIRONMENT=test",
-]
 
 
 # --------------------------------------------------------------------------- #
