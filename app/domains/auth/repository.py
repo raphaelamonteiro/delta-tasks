@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.db.models import User
 from app.domains.auth.exceptions import EmailAlreadyExistsError
@@ -18,7 +19,10 @@ class AuthRepository:
         return result.scalars().first()
 
     async def get_by_id(self, user_id: UUID) -> User | None:
-        return await self.db.get(User, user_id)
+        result = await self.db.execute(
+            select(User).where(User.id == user_id).options(selectinload(User.memberships))
+        )
+        return result.scalars().first()
 
     async def update_password_hash(self, user: User, password_hash: str) -> None:
         user.password_hash = password_hash

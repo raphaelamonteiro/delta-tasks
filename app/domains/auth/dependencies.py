@@ -5,9 +5,9 @@ from fastapi import Depends, HTTPException, Request, status
 from app.core.jwt import JWTService
 from app.core.security import PasswordSecurity
 from app.db.dependencies import PgSessionDep
-from app.db.models import GlobalRole, User
 from app.domains.auth.cookies import ACCESS_COOKIE_NAME
 from app.domains.auth.exceptions import InvalidCredentialsError
+from app.domains.auth.principal import CurrentUser
 from app.domains.auth.repository import AuthRepository
 from app.domains.auth.service import AuthService
 
@@ -36,22 +36,24 @@ def _not_authenticated() -> HTTPException:
     )
 
 
-async def get_current_user(request: Request, service: AuthServiceDep) -> User:
+async def get_current_user(request: Request, service: AuthServiceDep) -> CurrentUser:
     token = request.cookies.get(ACCESS_COOKIE_NAME)
     if not token:
         raise _not_authenticated()
 
     try:
-        return await service.get_user_from_access_token(token)
+        user = await service.get_user_from_access_token(token)
     except InvalidCredentialsError as exc:
         raise _not_authenticated() from exc
 
+    return CurrentUser.from_user(user)
 
-CurrentUserDep = Annotated[User, Depends(get_current_user)]
+
+CurrentUserDep = Annotated[CurrentUser, Depends(get_current_user)]
 
 
-def require_admin(user: CurrentUserDep) -> User:
-    if user.global_role != GlobalRole.ADMIN:
+def require_admin(user: CurrentUserDep) -> CurrentUser:
+    if not user.is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin privileges required.",
@@ -59,4 +61,4 @@ def require_admin(user: CurrentUserDep) -> User:
     return user
 
 
-AdminUserDep = Annotated[User, Depends(require_admin)]
+AdminUserDep = Annotated[CurrentUser, Depends(require_admin)]

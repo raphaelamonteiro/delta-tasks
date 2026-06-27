@@ -9,6 +9,7 @@ Gerenciador de tarefas ágil baseado no modelo Kanban.
 <a href="#estrutura">Estrutura</a> | 
 <a href="#rodar">Como rodar</a> | 
 <a href="#comandos">Comandos</a> |
+<a href="#documentacao">Documentação</a> |
 <a href="#creditos">Créditos</a> 
 </p>
 
@@ -105,6 +106,16 @@ make dev            # uvicorn com --reload
 
 > Os arquivos `requirements.txt` e `requirements-dev.txt` são **gerados** a partir do `poetry.lock`.
 > Após alterar dependências no `pyproject.toml`, rode `make requirements` para mantê-los em sincronia.
+
+
+## 📚 Documentação
+<a id="documentacao"></a>
+
+Guias para desenvolvedores sobre como usar e estender os módulos da aplicação
+(em [`docs/modulos/`](docs/modulos/)):
+
+- [🔐 Módulo de Autenticação](docs/modulos/autenticacao.md) — login com JWT em cookies, refresh, troca de senha e proteção de rotas.
+- [👥 Módulo de Usuários](docs/modulos/usuarios.md) — listagem, consulta, atualização e remoção de contas.
 
 
 ## 👥 Créditos
