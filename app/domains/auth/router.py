@@ -116,7 +116,7 @@ async def change_password(
     service: AuthServiceDep,
 ) -> None:
     try:
-        await service.change_password(user, dto)
+        await service.change_password(user.user, dto)
     except InvalidCredentialsError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

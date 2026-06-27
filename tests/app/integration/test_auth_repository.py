@@ -1,10 +1,12 @@
 from uuid import uuid4
 
 import pytest
+from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import GlobalRole, User
+from app.db.models import GlobalRole, Project, ProjectMember, ProjectRole, User
 from app.domains.auth.exceptions import EmailAlreadyExistsError
+from app.domains.auth.principal import CurrentUser
 from app.domains.auth.repository import AuthRepository
 from app.domains.auth.schemas import CreateUserDTO
 
@@ -72,3 +74,24 @@ async def test_create_inactive_user_is_not_returned_as_active(
     fetched = await repo.get_by_email("off@example.com")
     assert fetched is not None
     assert fetched.is_active is False
+
+
+async def test_get_by_id_eager_loads_project_memberships(
+    repo: AuthRepository, db_session: AsyncSession
+) -> None:
+    owner = await repo.create(make_dto(email="owner@example.com"))
+    project = Project(name="Board", owner_id=owner.id)
+    db_session.add(project)
+    await db_session.commit()
+    await db_session.refresh(project)
+    db_session.add(ProjectMember(project_id=project.id, user_id=owner.id, role=ProjectRole.OWNER))
+    await db_session.commit()
+
+    fetched = await repo.get_by_id(owner.id)
+    assert fetched is not None
+
+    assert "memberships" not in inspect(fetched).unloaded
+
+    principal = CurrentUser.from_user(fetched)
+    assert principal.role_in(project.id) is ProjectRole.OWNER
+    assert principal.is_member(project.id) is True
