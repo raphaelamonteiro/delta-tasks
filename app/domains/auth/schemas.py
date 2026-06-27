@@ -31,4 +31,22 @@ class RegisterUserResponse(BaseDTO):
 
 
 class LoginDTO(BaseDTO):
-    pass
+    email: EmailStr = Field(max_length=255)
+    # No strength rules here: password policy is enforced at registration / change.
+    # A present-but-wrong password must reach authentication (401), not fail as 400.
+    password: str = Field(min_length=1, max_length=128)
+
+
+class ChangePasswordDTO(BaseDTO):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class AuthenticatedUser(BaseDTO):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    email: EmailStr
+    global_role: GlobalRole
+    is_active: bool
