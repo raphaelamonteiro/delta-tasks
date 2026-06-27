@@ -25,11 +25,11 @@ class ContextQueueHandler(QueueHandler):
         record = super().prepare(record)
         ctx_request_id = request_id_ctx.get()
         if ctx_request_id:
-            record.request_id = ctx_request_id  # type: ignore[attr-defined]
+            record.request_id = ctx_request_id
 
         ctx_user_id = user_id_ctx.get()
         if ctx_user_id:
-            record.user_id = ctx_user_id  # type: ignore[attr-defined]
+            record.user_id = ctx_user_id
 
         return record
 

@@ -62,8 +62,6 @@ async def login(
     response: Response,
     service: AuthServiceDep,
 ) -> AuthenticatedUser:
-    # US-002: invalid credentials and inactive accounts both return 401 without
-    # revealing which check failed.
     try:
         result = await service.login(dto)
     except (InvalidCredentialsError, InactiveUserError) as exc:

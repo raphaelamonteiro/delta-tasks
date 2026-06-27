@@ -32,8 +32,6 @@ class RegisterUserResponse(BaseDTO):
 
 class LoginDTO(BaseDTO):
     email: EmailStr = Field(max_length=255)
-    # No strength rules here: password policy is enforced at registration / change.
-    # A present-but-wrong password must reach authentication (401), not fail as 400.
     password: str = Field(min_length=1, max_length=128)
 
 
