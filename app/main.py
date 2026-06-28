@@ -1,5 +1,6 @@
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI, Request, status
 from fastapi.encoders import jsonable_encoder
@@ -10,6 +11,7 @@ from app.config import get_settings
 from app.core.logger import get_logger, stop_logger
 from app.db.init_db import init_postgres_db
 from app.domains.auth.router import auth_router
+from app.domains.projects.router import projects_router
 from app.domains.users.router import users_router
 
 
@@ -27,9 +29,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 async def validation_exception_handler(_request: Request, exc: Exception) -> JSONResponse:
-    # The acceptance criteria require HTTP 400 for invalid request payloads
-    # (US-002, US-004), so we override FastAPI's default 422.
-    errors = exc.errors() if isinstance(exc, RequestValidationError) else []
+    errors: Sequence[Any] = exc.errors() if isinstance(exc, RequestValidationError) else []
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={"detail": jsonable_encoder(errors)},
@@ -47,4 +47,5 @@ def create_app() -> FastAPI:
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.include_router(auth_router)
     app.include_router(users_router)
+    app.include_router(projects_router)
     return app
