@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.db.models import (
     Notification,
     NotificationType,
+    Project,
     ProjectMember,
     Stage,
     Task,
@@ -26,6 +27,12 @@ class TaskRepository:
     async def get_stages(self, stage_ids: Iterable[int]) -> dict[int, Stage]:
         result = await self.db.execute(select(Stage).where(Stage.id.in_(stage_ids)))
         return {stage.id: stage for stage in result.scalars()}
+
+    async def get_project_owner_id(self, project_id: int) -> UUID:
+        result = await self.db.execute(
+            select(Project.owner_id).where(Project.id == project_id)
+        )
+        return result.scalar_one()
 
     async def list_history(self, task_id: int) -> Sequence[TaskHistory]:
         result = await self.db.execute(
@@ -78,13 +85,19 @@ class TaskRepository:
         return True
 
     async def move_to_stage(
-        self, task: Task, source: Stage, dest: Stage, author_id: UUID
+        self,
+        task: Task,
+        source: Stage,
+        dest: Stage,
+        author_id: UUID,
+        recipients: Iterable[UUID],
     ) -> Task:
-        """Move a tarefa para ``dest``, registra o histórico e notifica o responsável.
+        """Move a tarefa para ``dest``, registra o histórico e notifica ``recipients``.
 
         A nova posição (fim da coluna de destino) é calculada por subconsulta dentro do
-        próprio ``UPDATE``; o registro de histórico (RN-007) e a notificação (RN-008)
-        entram no mesmo commit, mantendo a operação atômica.
+        próprio ``UPDATE``; o registro de histórico (RN-007) e as notificações (RN-008)
+        entram no mesmo commit, mantendo a operação atômica. A política de quem é
+        notificado fica no serviço; aqui apenas persistimos o conjunto recebido.
         """
         next_position = (
             select(func.coalesce(func.max(Task.position), -1) + 1)
@@ -110,10 +123,10 @@ class TaskRepository:
                 author_id=author_id,
             )
         )
-        if task.responsible_id is not None and task.responsible_id != author_id:
+        for recipient_id in recipients:
             self.db.add(
                 Notification(
-                    recipient_id=task.responsible_id,
+                    recipient_id=recipient_id,
                     task_id=task.id,
                     type=NotificationType.COLUMN_CHANGE,
                 )

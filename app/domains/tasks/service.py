@@ -61,9 +61,18 @@ class TaskService:
             return task
 
         source = stages[task.stage_id]
-        task = await self.repo.move_to_stage(task, source, dest, author_id)
+        recipients = await self._move_recipients(task, author_id)
+        task = await self.repo.move_to_stage(task, source, dest, author_id, recipients)
         logger.info(
             "Task moved",
             extra={"task_id": task.id, "from_stage_id": source.id, "to_stage_id": dest.id},
         )
         return task
+
+    async def _move_recipients(self, task: Task, author_id: UUID) -> set[UUID]:
+        # RN-008: notifica o responsável e o dono do projeto, exceto quem moveu a tarefa.
+        recipients = {await self.repo.get_project_owner_id(task.project_id)}
+        if task.responsible_id is not None:
+            recipients.add(task.responsible_id)
+        recipients.discard(author_id)
+        return recipients

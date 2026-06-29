@@ -86,17 +86,72 @@ async def test_assign_substitutes_previous_responsible(
 
 async def test_move_task_to_another_column(service: TaskService, repo: AsyncMock) -> None:
     author_id = uuid4()
+    owner_id = uuid4()
     task = Task(id=1, project_id=7, stage_id=10, title="T", position=0)
     source = Stage(id=10, project_id=7, name="Pendente", position=0)
     dest = Stage(id=20, project_id=7, name="Em Progresso", position=1)
     repo.get_stages.return_value = {10: source, 20: dest}
+    repo.get_project_owner_id.return_value = owner_id
     repo.move_to_stage.return_value = task
 
     result = await service.move_task(task, 20, author_id)
 
     assert result is task
     repo.get_stages.assert_awaited_once_with({10, 20})
-    repo.move_to_stage.assert_awaited_once_with(task, source, dest, author_id)
+    repo.move_to_stage.assert_awaited_once_with(task, source, dest, author_id, {owner_id})
+
+
+async def test_move_task_notifies_owner_and_responsible(
+    service: TaskService, repo: AsyncMock
+) -> None:
+    author_id, owner_id, responsible_id = uuid4(), uuid4(), uuid4()
+    task = Task(
+        id=1, project_id=7, stage_id=10, title="T", position=0, responsible_id=responsible_id
+    )
+    source = Stage(id=10, project_id=7, name="Pendente", position=0)
+    dest = Stage(id=20, project_id=7, name="Em Progresso", position=1)
+    repo.get_stages.return_value = {10: source, 20: dest}
+    repo.get_project_owner_id.return_value = owner_id
+    repo.move_to_stage.return_value = task
+
+    await service.move_task(task, 20, author_id)
+
+    repo.move_to_stage.assert_awaited_once_with(
+        task, source, dest, author_id, {owner_id, responsible_id}
+    )
+
+
+async def test_move_task_excludes_the_mover_from_recipients(
+    service: TaskService, repo: AsyncMock
+) -> None:
+    # quem move é, ao mesmo tempo, dono e responsável: ninguém é notificado.
+    author_id = uuid4()
+    task = Task(id=1, project_id=7, stage_id=10, title="T", position=0, responsible_id=author_id)
+    source = Stage(id=10, project_id=7, name="Pendente", position=0)
+    dest = Stage(id=20, project_id=7, name="Em Progresso", position=1)
+    repo.get_stages.return_value = {10: source, 20: dest}
+    repo.get_project_owner_id.return_value = author_id
+    repo.move_to_stage.return_value = task
+
+    await service.move_task(task, 20, author_id)
+
+    repo.move_to_stage.assert_awaited_once_with(task, source, dest, author_id, set())
+
+
+async def test_move_task_dedups_owner_and_responsible(
+    service: TaskService, repo: AsyncMock
+) -> None:
+    author_id, owner_id = uuid4(), uuid4()
+    task = Task(id=1, project_id=7, stage_id=10, title="T", position=0, responsible_id=owner_id)
+    source = Stage(id=10, project_id=7, name="Pendente", position=0)
+    dest = Stage(id=20, project_id=7, name="Em Progresso", position=1)
+    repo.get_stages.return_value = {10: source, 20: dest}
+    repo.get_project_owner_id.return_value = owner_id
+    repo.move_to_stage.return_value = task
+
+    await service.move_task(task, 20, author_id)
+
+    repo.move_to_stage.assert_awaited_once_with(task, source, dest, author_id, {owner_id})
 
 
 async def test_move_task_rejects_stage_of_other_project(

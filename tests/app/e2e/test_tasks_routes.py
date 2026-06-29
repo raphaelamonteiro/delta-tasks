@@ -268,8 +268,63 @@ async def test_move_task_notifies_responsible(
         )
     )
     notifications = result.scalars().all()
+    # O dono (regular_user) é quem moveu, então só o responsável é notificado.
     assert len(notifications) == 1
     assert notifications[0].recipient_id == member.id
+
+
+async def test_move_task_notifies_project_owner_when_a_member_moves(
+    client: AsyncClient,
+    regular_user: User,
+    make_user: UserFactory,
+    db_session: AsyncSession,
+) -> None:
+    await login_as(client, regular_user.email)
+    project_id, task_id, stages = await _create_board_with_task(client, db_session)
+    mover = await make_user(email="mover@example.com")
+    await _add_member(db_session, project_id, mover, ProjectRole.MEMBER)
+
+    await login_as(client, mover.email)
+    await client.patch(f"/tasks/{task_id}/stage", json={"stage_id": stages[1]})
+
+    result = await db_session.execute(
+        select(Notification).where(
+            Notification.task_id == task_id,
+            Notification.type == NotificationType.COLUMN_CHANGE,
+        )
+    )
+    notifications = result.scalars().all()
+    assert len(notifications) == 1
+    assert notifications[0].recipient_id == regular_user.id
+
+
+async def test_move_task_notifies_owner_and_responsible(
+    client: AsyncClient,
+    regular_user: User,
+    make_user: UserFactory,
+    db_session: AsyncSession,
+) -> None:
+    await login_as(client, regular_user.email)
+    project_id, task_id, stages = await _create_board_with_task(client, db_session)
+    mover = await make_user(email="mover@example.com")
+    responsible = await make_user(email="responsible@example.com")
+    await _add_member(db_session, project_id, mover, ProjectRole.MEMBER)
+    await _add_member(db_session, project_id, responsible, ProjectRole.MEMBER)
+    await client.patch(
+        f"/tasks/{task_id}/responsible", json={"responsible_id": str(responsible.id)}
+    )
+
+    await login_as(client, mover.email)
+    await client.patch(f"/tasks/{task_id}/stage", json={"stage_id": stages[1]})
+
+    result = await db_session.execute(
+        select(Notification).where(
+            Notification.task_id == task_id,
+            Notification.type == NotificationType.COLUMN_CHANGE,
+        )
+    )
+    recipients = {n.recipient_id for n in result.scalars().all()}
+    assert recipients == {regular_user.id, responsible.id}
 
 
 async def test_move_task_to_other_project_column_returns_400(

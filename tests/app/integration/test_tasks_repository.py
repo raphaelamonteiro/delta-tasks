@@ -181,7 +181,7 @@ async def test_move_to_stage_persists_and_records_history(
     _, stages, task = await _make_board_with_task(db_session, owner)
     source, dest = stages[0], stages[1]
 
-    moved = await repo.move_to_stage(task, source, dest, owner.id)
+    moved = await repo.move_to_stage(task, source, dest, owner.id, set())
 
     assert moved.stage_id == dest.id
 
@@ -212,39 +212,33 @@ async def test_move_to_stage_appends_to_end_of_destination(
     )
     await db_session.commit()
 
-    moved = await repo.move_to_stage(task, stages[0], stages[1], owner.id)
+    moved = await repo.move_to_stage(task, stages[0], stages[1], owner.id, set())
 
     assert moved.position == 1
 
 
-async def test_move_to_stage_notifies_responsible(
+async def test_move_to_stage_enqueues_one_notification_per_recipient(
     repo: TaskRepository, db_session: AsyncSession
 ) -> None:
     owner = await _make_user(db_session, "owner@example.com")
     member = await _make_user(db_session, "member@example.com")
-    project, stages, task = await _make_board_with_task(db_session, owner)
-    db_session.add(ProjectMember(project_id=project.id, user_id=member.id, role=ProjectRole.MEMBER))
-    task.responsible_id = member.id
-    await db_session.commit()
+    _, stages, task = await _make_board_with_task(db_session, owner)
 
-    await repo.move_to_stage(task, stages[0], stages[1], owner.id)
+    await repo.move_to_stage(task, stages[0], stages[1], member.id, {owner.id, member.id})
 
     result = await db_session.execute(select(Notification).where(Notification.task_id == task.id))
     notifications = result.scalars().all()
-    assert len(notifications) == 1
-    assert notifications[0].recipient_id == member.id
-    assert notifications[0].type is NotificationType.COLUMN_CHANGE
+    assert {n.recipient_id for n in notifications} == {owner.id, member.id}
+    assert all(n.type is NotificationType.COLUMN_CHANGE for n in notifications)
 
 
-async def test_move_to_stage_skips_notification_when_mover_is_responsible(
+async def test_move_to_stage_without_recipients_enqueues_nothing(
     repo: TaskRepository, db_session: AsyncSession
 ) -> None:
     owner = await _make_user(db_session, "owner@example.com")
-    project, stages, task = await _make_board_with_task(db_session, owner)
-    task.responsible_id = owner.id
-    await db_session.commit()
+    _, stages, task = await _make_board_with_task(db_session, owner)
 
-    await repo.move_to_stage(task, stages[0], stages[1], owner.id)
+    await repo.move_to_stage(task, stages[0], stages[1], owner.id, set())
 
     notifications = await db_session.scalars(
         select(Notification).where(Notification.task_id == task.id)
@@ -252,13 +246,22 @@ async def test_move_to_stage_skips_notification_when_mover_is_responsible(
     assert notifications.all() == []
 
 
+async def test_get_project_owner_id_returns_owner(
+    repo: TaskRepository, db_session: AsyncSession
+) -> None:
+    owner = await _make_user(db_session, "owner@example.com")
+    project, _, _ = await _make_board_with_task(db_session, owner)
+
+    assert await repo.get_project_owner_id(project.id) == owner.id
+
+
 async def test_list_history_returns_chronological_with_author(
     repo: TaskRepository, db_session: AsyncSession
 ) -> None:
     owner = await _make_user(db_session, "owner@example.com")
     _, stages, task = await _make_board_with_task(db_session, owner)
-    await repo.move_to_stage(task, stages[0], stages[1], owner.id)
-    await repo.move_to_stage(task, stages[1], stages[0], owner.id)
+    await repo.move_to_stage(task, stages[0], stages[1], owner.id, set())
+    await repo.move_to_stage(task, stages[1], stages[0], owner.id, set())
 
     db_session.expunge_all()
     history = await repo.list_history(task.id)

@@ -59,8 +59,9 @@ move_task_swagger: dict[str, Any] = {
     "description": (
         "Move a tarefa para outra coluna do mesmo quadro (RN-005), registra o histórico da "
         "movimentação — coluna de origem, coluna de destino, autor e data/hora (RN-007) — e "
-        "enfileira uma notificação por e-mail para o responsável da tarefa (RN-008). Restrito "
-        "a membros do projeto com papel DONO ou MEMBRO (RN-003)."
+        "enfileira notificações por e-mail para o responsável da tarefa e o dono do projeto, "
+        "exceto para quem realizou a movimentação (RN-008). Restrito a membros do projeto com "
+        "papel DONO ou MEMBRO (RN-003)."
     ),
     "response_model": TaskResponse,
     "responses": {
