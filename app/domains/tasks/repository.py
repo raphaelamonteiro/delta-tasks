@@ -1,9 +1,10 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.db.models import (
     Notification,
@@ -25,6 +26,15 @@ class TaskRepository:
     async def get_stages(self, stage_ids: Iterable[int]) -> dict[int, Stage]:
         result = await self.db.execute(select(Stage).where(Stage.id.in_(stage_ids)))
         return {stage.id: stage for stage in result.scalars()}
+
+    async def list_history(self, task_id: int) -> Sequence[TaskHistory]:
+        result = await self.db.execute(
+            select(TaskHistory)
+            .where(TaskHistory.task_id == task_id)
+            .options(selectinload(TaskHistory.author))
+            .order_by(TaskHistory.created_at, TaskHistory.id)
+        )
+        return result.scalars().all()
 
     async def update(self, task: Task, changes: dict[str, Any]) -> Task:
         for field, value in changes.items():

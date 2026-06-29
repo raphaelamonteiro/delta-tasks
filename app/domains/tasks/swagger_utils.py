@@ -1,6 +1,23 @@
 from typing import Any
 
-from app.domains.tasks.schemas import TaskResponse
+from app.domains.tasks.schemas import TaskHistoryResponse, TaskResponse
+
+get_task_history_swagger: dict[str, Any] = {
+    "summary": "Visualizar histórico de movimentações",
+    "description": (
+        "Retorna, em ordem cronológica, os registros de movimentação da tarefa — coluna de "
+        "origem, coluna de destino, autor e data/hora (RN-007). O histórico é imutável e "
+        "append-only: não há endpoint de atualização ou remoção. Restrito a membros do "
+        "projeto (RN-003)."
+    ),
+    "response_model": list[TaskHistoryResponse],
+    "responses": {
+        200: {"description": "Histórico da tarefa (lista vazia se não houve movimentações)."},
+        401: {"description": "Não autenticado."},
+        403: {"description": "Não é membro do projeto."},
+        404: {"description": "Tarefa não encontrada."},
+    },
+}
 
 update_task_swagger: dict[str, Any] = {
     "summary": "Editar tarefa",

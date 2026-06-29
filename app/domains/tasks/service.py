@@ -1,7 +1,8 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from app.core.logger import get_logger
-from app.db.models import Task
+from app.db.models import Task, TaskHistory
 from app.domains.tasks.exceptions import (
     ResponsibleNotMemberError,
     StageNotInProjectError,
@@ -22,6 +23,9 @@ class TaskService:
         if task is None:
             raise TaskNotFoundError(task_id)
         return task
+
+    async def list_history(self, task: Task) -> Sequence[TaskHistory]:
+        return await self.repo.list_history(task.id)
 
     async def update_task(self, task: Task, dto: UpdateTaskDTO) -> Task:
         changes = dto.model_dump(exclude_unset=True)

@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import pytest
 
-from app.db.models import Stage, Task
+from app.db.models import Stage, Task, TaskHistory
 from app.domains.tasks.exceptions import (
     ResponsibleNotMemberError,
     StageNotInProjectError,
@@ -165,3 +165,12 @@ async def test_update_task_with_empty_body_is_noop(service: TaskService, repo: A
     await service.update_task(task, UpdateTaskDTO())
 
     repo.update.assert_awaited_once_with(task, {})
+
+
+async def test_list_history_delegates_to_repository(service: TaskService, repo: AsyncMock) -> None:
+    task = Task(id=5, project_id=7, stage_id=10, title="T", position=0)
+    history = [TaskHistory(id=1, task_id=5, from_stage_name="A", to_stage_name="B")]
+    repo.list_history.return_value = history
+
+    assert await service.list_history(task) == history
+    repo.list_history.assert_awaited_once_with(5)

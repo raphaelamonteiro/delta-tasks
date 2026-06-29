@@ -451,3 +451,101 @@ async def test_update_task_forbidden_for_non_member(
     response = await client.patch(f"/tasks/{task_id}", json={"title": "Hack"})
 
     assert response.status_code == 403
+
+
+# --------------------------------------------------------------------------- #
+# US-014: Visualizar histórico de movimentações
+# --------------------------------------------------------------------------- #
+
+
+async def test_get_history_requires_authentication(client: AsyncClient) -> None:
+    response = await client.get("/tasks/1/history")
+    assert response.status_code == 401
+
+
+async def test_get_history_returns_records_in_chronological_order(
+    client: AsyncClient, regular_user: User, db_session: AsyncSession
+) -> None:
+    await login_as(client, regular_user.email)
+    _, task_id, stages = await _create_board_with_task(client, db_session)
+    await client.patch(f"/tasks/{task_id}/stage", json={"stage_id": stages[1]})
+    await client.patch(f"/tasks/{task_id}/stage", json={"stage_id": stages[2]})
+
+    response = await client.get(f"/tasks/{task_id}/history")
+
+    assert response.status_code == 200
+    records = response.json()
+    assert [(r["from_stage_name"], r["to_stage_name"]) for r in records] == [
+        ("Pendente", "Em Progresso"),
+        ("Em Progresso", "Em Revisão"),
+    ]
+    assert records[0]["author_id"] == str(regular_user.id)
+    assert records[0]["author_name"] == regular_user.name
+    assert records[0]["created_at"] is not None
+    assert records[0]["created_at"] <= records[1]["created_at"]
+
+
+async def test_get_history_empty_for_task_without_movements(
+    client: AsyncClient, regular_user: User, db_session: AsyncSession
+) -> None:
+    await login_as(client, regular_user.email)
+    _, task_id = await _create_project_with_task(client, db_session)
+
+    response = await client.get(f"/tasks/{task_id}/history")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+async def test_get_history_allows_observer(
+    client: AsyncClient,
+    regular_user: User,
+    make_user: UserFactory,
+    db_session: AsyncSession,
+) -> None:
+    await login_as(client, regular_user.email)
+    project_id, task_id, stages = await _create_board_with_task(client, db_session)
+    await client.patch(f"/tasks/{task_id}/stage", json={"stage_id": stages[1]})
+    observer = await make_user(email="observer@example.com")
+    await _add_member(db_session, project_id, observer, ProjectRole.OBSERVER)
+
+    await login_as(client, observer.email)
+    response = await client.get(f"/tasks/{task_id}/history")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+async def test_get_history_forbidden_for_non_member(
+    client: AsyncClient,
+    regular_user: User,
+    make_user: UserFactory,
+    db_session: AsyncSession,
+) -> None:
+    await login_as(client, regular_user.email)
+    _, task_id = await _create_project_with_task(client, db_session)
+    outsider = await make_user(email="outsider@example.com")
+
+    await login_as(client, outsider.email)
+    response = await client.get(f"/tasks/{task_id}/history")
+
+    assert response.status_code == 403
+
+
+async def test_get_history_not_found(client: AsyncClient, regular_user: User) -> None:
+    await login_as(client, regular_user.email)
+    response = await client.get("/tasks/999999/history")
+    assert response.status_code == 404
+
+
+async def test_history_has_no_update_or_delete_endpoint(
+    client: AsyncClient, regular_user: User, db_session: AsyncSession
+) -> None:
+    await login_as(client, regular_user.email)
+    _, task_id = await _create_project_with_task(client, db_session)
+
+    patched = await client.patch(f"/tasks/{task_id}/history", json={})
+    deleted = await client.delete(f"/tasks/{task_id}/history")
+
+    assert patched.status_code == 405
+    assert deleted.status_code == 405

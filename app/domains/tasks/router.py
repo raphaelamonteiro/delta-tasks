@@ -13,11 +13,13 @@ from app.domains.tasks.exceptions import (
 from app.domains.tasks.schemas import (
     AssignResponsibleDTO,
     MoveTaskDTO,
+    TaskHistoryResponse,
     TaskResponse,
     UpdateTaskDTO,
 )
 from app.domains.tasks.swagger_utils import (
     assign_responsible_swagger,
+    get_task_history_swagger,
     move_task_swagger,
     update_task_swagger,
 )
@@ -39,6 +41,35 @@ def _require_write_access(task: Task, user: CurrentUser) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to modify tasks in this project.",
         )
+
+
+def _require_read_access(task: Task, user: CurrentUser) -> None:
+    # RN-003: qualquer membro do projeto (ou admin global) pode visualizar.
+    if not (user.is_admin or user.is_member(task.project_id)):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not a member of this project.",
+        )
+
+
+@tasks_router.get("/{task_id}/history", **get_task_history_swagger)
+async def get_task_history(
+    task_id: int,
+    user: CurrentUserDep,
+    service: TaskServiceDep,
+) -> list[TaskHistoryResponse]:
+    try:
+        task = await service.get_task(task_id)
+    except TaskNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found.",
+        ) from exc
+
+    _require_read_access(task, user)
+
+    history = await service.list_history(task)
+    return [TaskHistoryResponse.from_history(record) for record in history]
 
 
 @tasks_router.patch("/{task_id}", **update_task_swagger)

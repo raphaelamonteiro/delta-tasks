@@ -250,3 +250,31 @@ async def test_move_to_stage_skips_notification_when_mover_is_responsible(
         select(Notification).where(Notification.task_id == task.id)
     )
     assert notifications.all() == []
+
+
+async def test_list_history_returns_chronological_with_author(
+    repo: TaskRepository, db_session: AsyncSession
+) -> None:
+    owner = await _make_user(db_session, "owner@example.com")
+    _, stages, task = await _make_board_with_task(db_session, owner)
+    await repo.move_to_stage(task, stages[0], stages[1], owner.id)
+    await repo.move_to_stage(task, stages[1], stages[0], owner.id)
+
+    db_session.expunge_all()
+    history = await repo.list_history(task.id)
+
+    assert [(record.from_stage_name, record.to_stage_name) for record in history] == [
+        ("Pendente", "Em Progresso"),
+        ("Em Progresso", "Pendente"),
+    ]
+    assert history[0].author.name == "User"
+    assert history[0].created_at <= history[1].created_at
+
+
+async def test_list_history_empty_for_task_without_movements(
+    repo: TaskRepository, db_session: AsyncSession
+) -> None:
+    owner = await _make_user(db_session, "owner@example.com")
+    _, task = await _make_project_with_task(db_session, owner)
+
+    assert await repo.list_history(task.id) == []
