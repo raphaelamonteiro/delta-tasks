@@ -1,7 +1,5 @@
 from typing import Annotated
-
 from fastapi import Depends
-
 from app.db.dependencies import PgSessionDep
 from app.domains.tasks.repository import TaskRepository
 from app.domains.tasks.service import TaskService

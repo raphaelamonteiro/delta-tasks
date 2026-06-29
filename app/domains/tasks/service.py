@@ -18,6 +18,11 @@ class TaskService:
     def __init__(self, repo: TaskRepository):
         self.repo = repo
 
+    async def create_task(self, owner_id: UUID, dto: create_task) -> Task:
+        task = await self.repo.create(owner_id, dto)
+        logger.info("Task created", extra={"task_id": task.id, "owner_id": str(owner_id)} )
+        return project
+
     async def get_task(self, task_id: int) -> Task:
         task = await self.repo.get(task_id)
         if task is None:

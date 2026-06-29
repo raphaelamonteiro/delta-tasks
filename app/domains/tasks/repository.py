@@ -6,16 +6,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.db.models import (
-    Notification,
-    NotificationType,
-    Project,
-    ProjectMember,
-    Stage,
-    Task,
-    TaskHistory,
-)
-
+from app.db.models import (Notification, NotificationType, Project,ProjectMember, Stage, Task, TaskHistory)
 
 class TaskRepository:
     def __init__(self, db: AsyncSession) -> None:
