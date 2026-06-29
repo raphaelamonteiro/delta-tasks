@@ -18,3 +18,12 @@ class ResponsibleNotMemberError(TaskError):
         self.user_id = user_id
         self.project_id = project_id
         super().__init__(f"User {user_id} is not a member of project {project_id}")
+
+
+class StageNotInProjectError(TaskError):
+    """Raised when the destination column is not part of the task's project (RN-005)."""
+
+    def __init__(self, stage_id: int, project_id: int) -> None:
+        self.stage_id = stage_id
+        self.project_id = project_id
+        super().__init__(f"Stage {stage_id} is not part of project {project_id}")

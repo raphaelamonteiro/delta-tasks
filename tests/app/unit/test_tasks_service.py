@@ -3,8 +3,12 @@ from uuid import uuid4
 
 import pytest
 
-from app.db.models import Task
-from app.domains.tasks.exceptions import ResponsibleNotMemberError, TaskNotFoundError
+from app.db.models import Stage, Task
+from app.domains.tasks.exceptions import (
+    ResponsibleNotMemberError,
+    StageNotInProjectError,
+    TaskNotFoundError,
+)
 from app.domains.tasks.service import TaskService
 
 
@@ -76,3 +80,53 @@ async def test_assign_substitutes_previous_responsible(
     await service.assign_responsible(task, new_responsible)
 
     repo.assign_responsible.assert_awaited_once_with(task, new_responsible)
+
+
+async def test_move_task_to_another_column(service: TaskService, repo: AsyncMock) -> None:
+    author_id = uuid4()
+    task = Task(id=1, project_id=7, stage_id=10, title="T", position=0)
+    source = Stage(id=10, project_id=7, name="Pendente", position=0)
+    dest = Stage(id=20, project_id=7, name="Em Progresso", position=1)
+    repo.get_stages.return_value = {10: source, 20: dest}
+    repo.move_to_stage.return_value = task
+
+    result = await service.move_task(task, 20, author_id)
+
+    assert result is task
+    repo.get_stages.assert_awaited_once_with({10, 20})
+    repo.move_to_stage.assert_awaited_once_with(task, source, dest, author_id)
+
+
+async def test_move_task_rejects_stage_of_other_project(
+    service: TaskService, repo: AsyncMock
+) -> None:
+    task = Task(id=1, project_id=7, stage_id=10, title="T", position=0)
+    repo.get_stages.return_value = {
+        10: Stage(id=10, project_id=7, name="Pendente", position=0),
+        20: Stage(id=20, project_id=99, name="Outra", position=0),
+    }
+
+    with pytest.raises(StageNotInProjectError):
+        await service.move_task(task, 20, uuid4())
+
+    repo.move_to_stage.assert_not_awaited()
+
+
+async def test_move_task_rejects_unknown_stage(service: TaskService, repo: AsyncMock) -> None:
+    task = Task(id=1, project_id=7, stage_id=10, title="T", position=0)
+    repo.get_stages.return_value = {10: Stage(id=10, project_id=7, name="Pendente", position=0)}
+
+    with pytest.raises(StageNotInProjectError):
+        await service.move_task(task, 20, uuid4())
+
+    repo.move_to_stage.assert_not_awaited()
+
+
+async def test_move_task_to_same_column_is_noop(service: TaskService, repo: AsyncMock) -> None:
+    task = Task(id=1, project_id=7, stage_id=10, title="T", position=0)
+    repo.get_stages.return_value = {10: Stage(id=10, project_id=7, name="Pendente", position=0)}
+
+    result = await service.move_task(task, 10, uuid4())
+
+    assert result is task
+    repo.move_to_stage.assert_not_awaited()

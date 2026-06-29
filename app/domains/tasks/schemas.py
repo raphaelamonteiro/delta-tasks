@@ -10,6 +10,10 @@ class AssignResponsibleDTO(BaseDTO):
     responsible_id: UUID
 
 
+class MoveTaskDTO(BaseDTO):
+    stage_id: int
+
+
 class TaskResponse(BaseDTO):
     model_config = ConfigDict(from_attributes=True)
 
