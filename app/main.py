@@ -12,6 +12,7 @@ from app.core.logger import get_logger, stop_logger
 from app.db.init_db import init_postgres_db
 from app.domains.auth.router import auth_router
 from app.domains.projects.router import projects_router
+from app.domains.tasks.router import tasks_router
 from app.domains.users.router import users_router
 
 
@@ -48,4 +49,5 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(users_router)
     app.include_router(projects_router)
+    app.include_router(tasks_router)
     return app
