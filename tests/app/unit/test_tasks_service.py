@@ -1,3 +1,4 @@
+from datetime import date
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
@@ -9,6 +10,7 @@ from app.domains.tasks.exceptions import (
     StageNotInProjectError,
     TaskNotFoundError,
 )
+from app.domains.tasks.schemas import UpdateTaskDTO
 from app.domains.tasks.service import TaskService
 
 
@@ -130,3 +132,36 @@ async def test_move_task_to_same_column_is_noop(service: TaskService, repo: Asyn
 
     assert result is task
     repo.move_to_stage.assert_not_awaited()
+
+
+async def test_update_task_applies_changes(service: TaskService, repo: AsyncMock) -> None:
+    task = Task(id=1, project_id=7, stage_id=10, title="Old", position=0)
+    repo.update.return_value = task
+    dto = UpdateTaskDTO(title="New", description="d", due_date=date(2026, 12, 31))
+
+    await service.update_task(task, dto)
+
+    repo.update.assert_awaited_once_with(
+        task, {"title": "New", "description": "d", "due_date": date(2026, 12, 31)}
+    )
+
+
+async def test_update_task_ignores_explicit_null_title(
+    service: TaskService, repo: AsyncMock
+) -> None:
+    task = Task(id=1, project_id=7, stage_id=10, title="Old", position=0)
+    repo.update.return_value = task
+    dto = UpdateTaskDTO.model_validate({"title": None, "due_date": None})
+
+    await service.update_task(task, dto)
+
+    repo.update.assert_awaited_once_with(task, {"due_date": None})
+
+
+async def test_update_task_with_empty_body_is_noop(service: TaskService, repo: AsyncMock) -> None:
+    task = Task(id=1, project_id=7, stage_id=10, title="Old", position=0)
+    repo.update.return_value = task
+
+    await service.update_task(task, UpdateTaskDTO())
+
+    repo.update.assert_awaited_once_with(task, {})

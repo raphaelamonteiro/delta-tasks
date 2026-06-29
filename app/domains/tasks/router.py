@@ -10,8 +10,17 @@ from app.domains.tasks.exceptions import (
     StageNotInProjectError,
     TaskNotFoundError,
 )
-from app.domains.tasks.schemas import AssignResponsibleDTO, MoveTaskDTO, TaskResponse
-from app.domains.tasks.swagger_utils import assign_responsible_swagger, move_task_swagger
+from app.domains.tasks.schemas import (
+    AssignResponsibleDTO,
+    MoveTaskDTO,
+    TaskResponse,
+    UpdateTaskDTO,
+)
+from app.domains.tasks.swagger_utils import (
+    assign_responsible_swagger,
+    move_task_swagger,
+    update_task_swagger,
+)
 
 logger = get_logger("app.tasks.router")
 
@@ -30,6 +39,27 @@ def _require_write_access(task: Task, user: CurrentUser) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to modify tasks in this project.",
         )
+
+
+@tasks_router.patch("/{task_id}", **update_task_swagger)
+async def update_task(
+    task_id: int,
+    dto: UpdateTaskDTO,
+    user: CurrentUserDep,
+    service: TaskServiceDep,
+) -> TaskResponse:
+    try:
+        task = await service.get_task(task_id)
+    except TaskNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found.",
+        ) from exc
+
+    _require_write_access(task, user)
+
+    task = await service.update_task(task, dto)
+    return TaskResponse.model_validate(task)
 
 
 @tasks_router.patch("/{task_id}/responsible", **assign_responsible_swagger)

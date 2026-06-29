@@ -1,9 +1,15 @@
 from datetime import date
 from uuid import UUID
 
-from pydantic import ConfigDict
+from pydantic import ConfigDict, Field
 
 from app.core.schemas import BaseDTO
+
+
+class UpdateTaskDTO(BaseDTO):
+    title: str | None = Field(default=None, min_length=1, max_length=150)
+    description: str | None = Field(default=None, max_length=2000)
+    due_date: date | None = Field(default=None)
 
 
 class AssignResponsibleDTO(BaseDTO):

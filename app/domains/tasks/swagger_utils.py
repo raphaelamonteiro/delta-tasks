@@ -2,6 +2,23 @@ from typing import Any
 
 from app.domains.tasks.schemas import TaskResponse
 
+update_task_swagger: dict[str, Any] = {
+    "summary": "Editar tarefa",
+    "description": (
+        "Atualiza título, descrição e/ou prazo da tarefa. Campos omitidos não são alterados; "
+        "``description`` e ``due_date`` podem ser enviados como ``null`` para limpar o valor. "
+        "Restrito a membros do projeto com papel DONO ou MEMBRO (RN-004)."
+    ),
+    "response_model": TaskResponse,
+    "responses": {
+        200: {"description": "Tarefa atualizada com sucesso."},
+        400: {"description": "Falha de validação (ex.: prazo em formato inválido)."},
+        401: {"description": "Não autenticado."},
+        403: {"description": "Sem permissão para editar a tarefa (ex.: Observador)."},
+        404: {"description": "Tarefa não encontrada."},
+    },
+}
+
 assign_responsible_swagger: dict[str, Any] = {
     "summary": "Atribuir responsável à tarefa",
     "description": (

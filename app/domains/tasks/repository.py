@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, select, update
@@ -24,6 +25,12 @@ class TaskRepository:
     async def get_stages(self, stage_ids: Iterable[int]) -> dict[int, Stage]:
         result = await self.db.execute(select(Stage).where(Stage.id.in_(stage_ids)))
         return {stage.id: stage for stage in result.scalars()}
+
+    async def update(self, task: Task, changes: dict[str, Any]) -> Task:
+        for field, value in changes.items():
+            setattr(task, field, value)
+        await self.db.commit()
+        return task
 
     async def assign_responsible(self, task: Task, responsible_id: UUID) -> bool:
         """Atribui o responsável somente se ele for membro do projeto da tarefa.

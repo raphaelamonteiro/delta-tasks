@@ -8,6 +8,7 @@ from app.domains.tasks.exceptions import (
     TaskNotFoundError,
 )
 from app.domains.tasks.repository import TaskRepository
+from app.domains.tasks.schemas import UpdateTaskDTO
 
 logger = get_logger("app.tasks.service")
 
@@ -20,6 +21,16 @@ class TaskService:
         task = await self.repo.get(task_id)
         if task is None:
             raise TaskNotFoundError(task_id)
+        return task
+
+    async def update_task(self, task: Task, dto: UpdateTaskDTO) -> Task:
+        changes = dto.model_dump(exclude_unset=True)
+        # title é obrigatório no modelo: ignora tentativa de defini-lo como nulo.
+        if changes.get("title") is None:
+            changes.pop("title", None)
+
+        task = await self.repo.update(task, changes)
+        logger.info("Task updated", extra={"task_id": task.id})
         return task
 
     async def assign_responsible(self, task: Task, responsible_id: UUID) -> Task:

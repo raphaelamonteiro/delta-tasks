@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -122,6 +124,42 @@ async def test_assign_responsible_non_member_returns_false_and_persists_nothing(
         select(Notification).where(Notification.task_id == task.id)
     )
     assert notifications.all() == []
+
+
+async def test_update_persists_changes(repo: TaskRepository, db_session: AsyncSession) -> None:
+    owner = await _make_user(db_session, "owner@example.com")
+    _, task = await _make_project_with_task(db_session, owner)
+
+    updated = await repo.update(
+        task, {"title": "Novo", "description": "desc", "due_date": date(2026, 12, 31)}
+    )
+
+    assert updated.title == "Novo"
+    assert updated.description == "desc"
+    assert updated.due_date == date(2026, 12, 31)
+
+    db_session.expunge_all()
+    reloaded = await repo.get(task.id)
+    assert reloaded is not None
+    assert reloaded.title == "Novo"
+    assert reloaded.description == "desc"
+    assert reloaded.due_date == date(2026, 12, 31)
+
+
+async def test_update_clears_nullable_fields(
+    repo: TaskRepository, db_session: AsyncSession
+) -> None:
+    owner = await _make_user(db_session, "owner@example.com")
+    _, task = await _make_project_with_task(db_session, owner)
+    await repo.update(task, {"description": "desc", "due_date": date(2026, 12, 31)})
+
+    await repo.update(task, {"description": None, "due_date": None})
+
+    db_session.expunge_all()
+    reloaded = await repo.get(task.id)
+    assert reloaded is not None
+    assert reloaded.description is None
+    assert reloaded.due_date is None
 
 
 async def test_get_stages_returns_requested_stages(

@@ -332,3 +332,122 @@ async def test_move_task_not_found(client: AsyncClient, regular_user: User) -> N
     await login_as(client, regular_user.email)
     response = await client.patch("/tasks/999999/stage", json={"stage_id": 1})
     assert response.status_code == 404
+
+
+# --------------------------------------------------------------------------- #
+# US-011: Editar tarefa
+# --------------------------------------------------------------------------- #
+
+
+async def test_update_task_requires_authentication(client: AsyncClient) -> None:
+    response = await client.patch("/tasks/1", json={"title": "X"})
+    assert response.status_code == 401
+
+
+async def test_update_task_success_reflects_on_board(
+    client: AsyncClient, regular_user: User, db_session: AsyncSession
+) -> None:
+    await login_as(client, regular_user.email)
+    project_id, task_id = await _create_project_with_task(client, db_session)
+
+    response = await client.patch(
+        f"/tasks/{task_id}",
+        json={"title": "Novo título", "description": "Nova desc", "due_date": "2026-12-31"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["title"] == "Novo título"
+    assert body["description"] == "Nova desc"
+    assert body["due_date"] == "2026-12-31"
+
+    board = await client.get(f"/projects/{project_id}")
+    card = board.json()["columns"][0]["tasks"][0]
+    assert card["title"] == "Novo título"
+    assert card["due_date"] == "2026-12-31"
+
+
+async def test_update_task_invalid_due_date_returns_400(
+    client: AsyncClient, regular_user: User, db_session: AsyncSession
+) -> None:
+    await login_as(client, regular_user.email)
+    _, task_id = await _create_project_with_task(client, db_session)
+
+    response = await client.patch(f"/tasks/{task_id}", json={"due_date": "invalid-date"})
+
+    assert response.status_code == 400
+    assert any("due_date" in error.get("loc", []) for error in response.json()["detail"])
+
+
+async def test_update_task_empty_title_returns_400(
+    client: AsyncClient, regular_user: User, db_session: AsyncSession
+) -> None:
+    await login_as(client, regular_user.email)
+    _, task_id = await _create_project_with_task(client, db_session)
+
+    response = await client.patch(f"/tasks/{task_id}", json={"title": ""})
+    assert response.status_code == 400
+
+
+async def test_update_task_null_due_date_clears_it(
+    client: AsyncClient, regular_user: User, db_session: AsyncSession
+) -> None:
+    await login_as(client, regular_user.email)
+    _, task_id = await _create_project_with_task(client, db_session)
+    await client.patch(f"/tasks/{task_id}", json={"due_date": "2026-12-31"})
+
+    response = await client.patch(f"/tasks/{task_id}", json={"due_date": None})
+
+    assert response.status_code == 200
+    assert response.json()["due_date"] is None
+
+
+async def test_update_task_null_title_is_ignored(
+    client: AsyncClient, regular_user: User, db_session: AsyncSession
+) -> None:
+    await login_as(client, regular_user.email)
+    _, task_id = await _create_project_with_task(client, db_session)
+
+    response = await client.patch(f"/tasks/{task_id}", json={"title": None})
+
+    assert response.status_code == 200
+    assert response.json()["title"] == "Tarefa"
+
+
+async def test_update_task_not_found(client: AsyncClient, regular_user: User) -> None:
+    await login_as(client, regular_user.email)
+    response = await client.patch("/tasks/999999", json={"title": "X"})
+    assert response.status_code == 404
+
+
+async def test_update_task_forbidden_for_observer(
+    client: AsyncClient,
+    regular_user: User,
+    make_user: UserFactory,
+    db_session: AsyncSession,
+) -> None:
+    await login_as(client, regular_user.email)
+    project_id, task_id = await _create_project_with_task(client, db_session)
+    observer = await make_user(email="observer@example.com")
+    await _add_member(db_session, project_id, observer, ProjectRole.OBSERVER)
+
+    await login_as(client, observer.email)
+    response = await client.patch(f"/tasks/{task_id}", json={"title": "Hack"})
+
+    assert response.status_code == 403
+
+
+async def test_update_task_forbidden_for_non_member(
+    client: AsyncClient,
+    regular_user: User,
+    make_user: UserFactory,
+    db_session: AsyncSession,
+) -> None:
+    await login_as(client, regular_user.email)
+    _, task_id = await _create_project_with_task(client, db_session)
+    outsider = await make_user(email="outsider@example.com")
+
+    await login_as(client, outsider.email)
+    response = await client.patch(f"/tasks/{task_id}", json={"title": "Hack"})
+
+    assert response.status_code == 403
