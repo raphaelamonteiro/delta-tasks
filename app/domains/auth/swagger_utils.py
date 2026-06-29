@@ -6,25 +6,25 @@ from app.domains.auth.schemas import AuthenticatedUser, RegisterUserResponse
 
 register_responses: dict[int | str, dict[str, Any]] = {
     201: {
-        "description": "User registered successfully.",
+        "description": "Usuário registrado com sucesso.",
     },
     401: {
-        "description": "Not authenticated.",
+        "description": "Não autenticado.",
     },
     403: {
-        "description": "Admin privileges required.",
+        "description": "Privilégios de administrador necessários.",
     },
     409: {
-        "description": "Email already registered.",
+        "description": "E-mail já cadastrado.",
     },
     400: {
-        "description": "Request body validation failed.",
+        "description": "Falha na validação do corpo da requisição.",
     },
 }
 
 register_user_swagger: dict[str, Any] = {
-    "summary": "Register a user",
-    "description": ("Creates a new user account. " "Returns 409 if the email is already taken."),
+    "summary": "Registrar usuário",
+    "description": ( "Cria uma nova conta de usuário. " "Retorna 409 se o e-mail já estiver em uso."),
     "status_code": status.HTTP_201_CREATED,
     "response_model": RegisterUserResponse,
     "responses": register_responses,
@@ -33,62 +33,57 @@ register_user_swagger: dict[str, Any] = {
 login_swagger: dict[str, Any] = {
     "summary": "Log in",
     "description": (
-        "Authenticates by email/password and sets HttpOnly access and refresh "
-        "token cookies. Returns 401 for invalid credentials or inactive accounts, "
-        "without revealing which check failed."
-    ),
+        "Autentica via e-mail/senha e define cookies HttpOnly de access e refresh token. "
+        "Retorna 401 para credenciais inválidas ou conta inativa, sem revelar qual verificação falhou."),
     "response_model": AuthenticatedUser,
     "responses": {
-        200: {"description": "Authenticated; auth cookies set."},
-        401: {"description": "Invalid credentials or inactive account."},
-        400: {"description": "Request body validation failed."},
+        200: {"description": "Autenticado; cookies de autenticação definidos."},
+        401: {"description": "Credenciais inválidas ou conta inativa."},
+        400: {"description": "Falha na validação do corpo da requisição."},
     },
 }
 
 refresh_swagger: dict[str, Any] = {
-    "summary": "Refresh the access token",
-    "description": (
-        "Issues a new access token cookie using the refresh token cookie. "
-        "Returns 401 if the refresh token is missing, invalid or expired."
-    ),
+    "summary": "Atualizar token de acesso",
+    "description": ("Gera um novo token de acesso usando o refresh token armazenado em cookie. "
+        "Retorna 401 se o refresh token estiver ausente, inválido ou expirado."),
     "response_model": AuthenticatedUser,
     "responses": {
-        200: {"description": "Access token refreshed."},
-        401: {"description": "Missing or invalid refresh token."},
+        200: {"description": "Token de acesso atualizado."},
+        401: {"description": "Refresh token ausente ou inválido."},
     },
 }
 
 logout_swagger: dict[str, Any] = {
     "summary": "Log out",
-    "description": "Clears the access and refresh token cookies.",
+    "description": "Remove os cookies de access e refresh token.",
     "status_code": status.HTTP_204_NO_CONTENT,
-    "responses": {
-        204: {"description": "Logged out; auth cookies cleared."},
-        401: {"description": "Not authenticated."},
+   "responses": {
+        204: {"description": "Logout realizado; cookies de autenticação removidos."},
+        401: {"description": "Não autenticado."},
     },
 }
 
 me_swagger: dict[str, Any] = {
-    "summary": "Current user",
-    "description": "Returns the authenticated user derived from the access token cookie.",
+    "summary": "Usuário atual",
+    "description": "Retorna o usuário autenticado a partir do cookie de access token.",
     "response_model": AuthenticatedUser,
     "responses": {
-        200: {"description": "Current user."},
-        401: {"description": "Not authenticated."},
+        200: {"description": "Usuário autenticado."},
+        401: {"description": "Não autenticado."},
     },
 }
 
 change_password_swagger: dict[str, Any] = {
-    "summary": "Change own password",
+    "summary": "Alterar própria senha",
     "description": (
-        "Changes the authenticated user's own password. Requires the current "
-        "password. Returns 401 if it is wrong, 400 if the new password is invalid "
-        "or equal to the current one."
-    ),
+        "Altera a senha do usuário autenticado. Requer a senha atual. "
+        "Retorna 401 se a senha atual estiver incorreta, ou 400 se a nova senha for inválida "
+        "ou igual à atual."),
     "status_code": status.HTTP_204_NO_CONTENT,
-    "responses": {
-        204: {"description": "Password changed."},
-        400: {"description": "Invalid new password."},
-        401: {"description": "Not authenticated or wrong current password."},
+     "responses": {
+        204: {"description": "Senha alterada com sucesso."},
+        400: {"description": "Nova senha inválida."},
+        401: {"description": "Não autenticado ou senha atual incorreta."},
     },
 }
