@@ -1,0 +1,104 @@
+@startuml casos-de-uso
+title Delta Tasks — Diagrama de Casos de Uso (MVP)
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+' ======================= Atores =======================
+actor "Usuário"           as Usuario
+actor "Administrador"     as Admin
+actor "Observador"        as Observador
+actor "Membro"            as Membro
+actor "Dono do Projeto"   as Dono
+actor "Serviço de E-mail\n(SMTP)" as Email
+
+' Hierarquia de papéis (generalização):
+' Dono herda de Membro, que herda de Observador, que é um Usuário.
+Admin       --|> Usuario
+Observador  --|> Usuario
+Membro      --|> Observador
+Dono        --|> Membro
+
+' ======================= Casos de uso =======================
+rectangle "Delta Tasks" {
+
+  ' --- Épico 1: Autenticação e Usuários ---
+  usecase "Fazer login"                  as UC_Login
+  usecase "Alterar a própria senha"      as UC_Senha
+  usecase "Criar usuário"                as UC_CriarUsuario
+  usecase "Desativar / reativar usuário" as UC_AtivarUsuario
+
+  ' --- Épico 2: Projetos, Colunas e Membros ---
+  usecase "Criar projeto"                as UC_CriarProjeto
+  usecase "Visualizar projetos e quadro" as UC_VerQuadro
+  usecase "Editar / excluir projeto"     as UC_EditarProjeto
+  usecase "Gerenciar membros"            as UC_Membros
+  usecase "Gerenciar colunas"            as UC_Colunas
+
+  ' --- Épico 3: Tarefas (Cards) e Fluxo Kanban ---
+  usecase "Criar tarefa"                 as UC_CriarTarefa
+  usecase "Editar tarefa"                as UC_EditarTarefa
+  usecase "Atribuir responsável"         as UC_Atribuir
+  usecase "Mover tarefa entre colunas"   as UC_Mover
+  usecase "Excluir tarefa"               as UC_ExcluirTarefa
+  usecase "Visualizar histórico"         as UC_Historico
+
+  ' --- Épico 4: Comentários ---
+  usecase "Comentar em tarefa"           as UC_Comentar
+  usecase "Listar comentários"           as UC_ListarComentarios
+
+  ' --- Casos de uso internos (disparados por inclusão) ---
+  usecase "Registrar histórico\nde movimentação" as UC_RegistrarHist
+  usecase "Enviar notificação\npor e-mail"       as UC_Notificar
+}
+
+' ======================= Associações ator → caso de uso =======================
+' Usuário autenticado (base)
+Usuario     --> UC_Login
+Usuario     --> UC_Senha
+Usuario     --> UC_CriarProjeto
+
+' Administrador do sistema (papel global)
+Admin       --> UC_CriarUsuario
+Admin       --> UC_AtivarUsuario
+
+' Observador: somente leitura no projeto (RN-004)
+Observador  --> UC_VerQuadro
+Observador  --> UC_Historico
+Observador  --> UC_ListarComentarios
+
+' Membro: escrita de tarefas e comentários (RN-004)
+Membro      --> UC_CriarTarefa
+Membro      --> UC_EditarTarefa
+Membro      --> UC_Atribuir
+Membro      --> UC_Mover
+Membro      --> UC_ExcluirTarefa
+Membro      --> UC_Comentar
+
+' Dono: gestão do projeto (RN-009)
+Dono        --> UC_EditarProjeto
+Dono        --> UC_Membros
+Dono        --> UC_Colunas
+
+' Ator secundário recebe o disparo da notificação
+UC_Notificar --> Email
+
+' ======================= include / extend =======================
+UC_Mover     ..> UC_RegistrarHist : <<include>>
+UC_Atribuir  ..> UC_Notificar     : <<include>>
+UC_Mover     ..> UC_Notificar     : <<include>>
+UC_Comentar  ..> UC_Notificar     : <<include>>
+
+note bottom of UC_Login
+  RN-002: exceto "Fazer login", todos os
+  casos de uso exigem autenticação (JWT).
+end note
+
+note bottom of UC_Notificar
+  RN-008: notifica responsável e Dono do
+  projeto, de forma assíncrona, exceto o
+  autor da ação.
+end note
+
+@enduml

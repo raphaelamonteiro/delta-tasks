@@ -1,0 +1,159 @@
+@startuml classes-arquitetura-tasks
+title Delta Tasks — Diagrama de Classes de Projeto (camadas + design patterns, fatia "tasks")
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+' ============================================================
+'  Camada de Apresentação (router)
+' ============================================================
+package "Apresentação · router" <<Layer>> {
+  class TasksRouter <<Boundary>> {
+    + update_task(id, dto: UpdateTaskDTO): TaskResponse
+    + assign_responsible(id, dto: AssignResponsibleDTO): TaskResponse
+    + move_task(id, dto: MoveTaskDTO): TaskResponse
+    + get_task_history(id): List<TaskHistoryResponse>
+    - _require_write_access(task, user): void
+    - _require_read_access(task, user): void
+  }
+  class TaskDependencies <<Factory>> {
+    + get_task_repository(db): TaskRepository
+    + get_task_service(repo): TaskService
+  }
+}
+
+' ============================================================
+'  Contratos de entrada/saída (schemas)
+' ============================================================
+package "Contratos · schemas" {
+  class UpdateTaskDTO <<DTO>> {
+    + title: String [0..1]
+    + description: String [0..1]
+    + due_date: Date [0..1]
+  }
+  class AssignResponsibleDTO <<DTO>> {
+    + responsible_id: UUID
+  }
+  class MoveTaskDTO <<DTO>> {
+    + stage_id: Integer
+  }
+  class TaskResponse <<DTO>> {
+    + id; project_id; stage_id; title
+    + description; responsible_id; due_date; position
+  }
+  class TaskHistoryResponse <<DTO>> {
+    + from_stage_name; to_stage_name
+    + author_id; author_name; created_at
+    + {static} from_history(h: TaskHistory): TaskHistoryResponse
+  }
+}
+
+' ============================================================
+'  Camada de Aplicação (service)
+' ============================================================
+package "Aplicação · service" <<Layer>> {
+  class TaskService <<Service Layer>> {
+    - repo: TaskRepository
+    + get_task(id): Task
+    + update_task(task, dto): Task
+    + assign_responsible(task, responsible_id): Task
+    + move_task(task, dest_stage_id, author_id): Task
+    + list_history(task): Sequence<TaskHistory>
+    - _move_recipients(task, author_id): Set<UUID>
+  }
+}
+
+' ============================================================
+'  Camada de Acesso a Dados (repository)
+' ============================================================
+package "Acesso a dados · repository" <<Layer>> {
+  class TaskRepository <<Repository>> {
+    - db: AsyncSession
+    + get(id): Task
+    + get_stages(ids): Map<Integer, Stage>
+    + get_project_owner_id(project_id): UUID
+    + update(task, changes): Task
+    + assign_responsible(task, responsible_id): Boolean
+    + move_to_stage(task, source, dest, author_id, recipients): Task
+    + list_history(task_id): Sequence<TaskHistory>
+  }
+}
+
+' ============================================================
+'  Domínio / Persistência (models ORM)
+' ============================================================
+package "Domínio · models (ORM)" {
+  class Task <<Entity>>
+  class Stage <<Entity>>
+  class TaskHistory <<Entity>>
+  class Notification <<Transactional Outbox>>
+  class ProjectMember <<Entity>>
+  class Project <<Entity>>
+}
+
+' ============================================================
+'  Cross-cutting (auth, sessão, exceções)
+' ============================================================
+package "Cross-cutting" {
+  class CurrentUser <<Value Object>> {
+    + role_in(project_id): PapelProjeto
+    + is_member(project_id): Boolean
+    + is_admin: Boolean
+  }
+  interface AsyncSession <<Unit of Work>>
+  class TaskError <<Domain Exception>>
+  class TaskNotFoundError
+  class StageNotInProjectError
+  class ResponsibleNotMemberError
+}
+
+TaskNotFoundError        --|> TaskError
+StageNotInProjectError   --|> TaskError
+ResponsibleNotMemberError --|> TaskError
+
+' ============================================================
+'  Fluxo estrito: router → service → repository → sessão/models
+' ============================================================
+TasksRouter      ..>  TaskService     : usa
+TaskService      o--> TaskRepository   : repo
+TaskRepository   o--> AsyncSession     : db
+
+TaskDependencies ..> TaskRepository    : «create»
+TaskDependencies ..> TaskService       : «create»
+
+TasksRouter ..> UpdateTaskDTO
+TasksRouter ..> AssignResponsibleDTO
+TasksRouter ..> MoveTaskDTO
+TasksRouter ..> TaskResponse
+TasksRouter ..> TaskHistoryResponse
+TasksRouter ..> CurrentUser            : guarda (RN-003/004)
+TasksRouter ..> TaskError              : traduz → HTTP 4xx
+
+TaskService ..> StageNotInProjectError    : lança
+TaskService ..> ResponsibleNotMemberError : lança
+
+TaskRepository ..> Task
+TaskRepository ..> Stage
+TaskRepository ..> TaskHistory
+TaskRepository ..> Notification        : enfileira (outbox)
+TaskRepository ..> ProjectMember
+TaskRepository ..> Project
+
+TaskHistoryResponse ..> TaskHistory    : «assembler»
+
+legend right
+  | Padrão | Onde aparece nesta fatia |
+  | Repository | TaskRepository |
+  | Service Layer | TaskService |
+  | Boundary / Controller | TasksRouter |
+  | DTO + Assembler | *DTO, TaskHistoryResponse.from_history() |
+  | Value Object (Principal) | CurrentUser |
+  | Transactional Outbox | Notification |
+  | Factory (provedores de DI) | TaskDependencies |
+  | Unit of Work | AsyncSession (SQLAlchemy) |
+  | Exception Shielding | *Error → HTTPException no router |
+  |  |  |
+  | Também no núcleo (fora desta fatia): | Adapter (PasswordSecurity, JWTService); Singleton (get_settings) |
+endlegend
+
+@enduml

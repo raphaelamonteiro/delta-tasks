@@ -1,0 +1,145 @@
+@startuml classes-dominio
+title Delta Tasks — Diagrama de Classes de Domínio (MVP)
+
+skinparam classAttributeIconSize 0
+hide methods
+hide circle
+
+' ======================= Enumerações =======================
+enum PapelGlobal {
+  ADMIN
+  USUARIO
+}
+enum PapelProjeto {
+  DONO
+  MEMBRO
+  OBSERVADOR
+}
+enum TipoNotificacao {
+  ATRIBUICAO
+  MUDANCA_COLUNA
+  NOVO_COMENTARIO
+}
+enum StatusEnvio {
+  PENDENTE
+  ENVIADA
+  FALHA
+}
+
+' ======================= Entidades de domínio =======================
+class Usuario <<E-001>> {
+  +id: UUID
+  +nome: String
+  +email: String {unique}
+  +senhaHash: String
+  +papelGlobal: PapelGlobal
+  +ativo: Boolean
+  +criadoEm: DateTime
+  +atualizadoEm: DateTime
+}
+
+class Projeto <<E-002>> {
+  +id: Integer
+  +nome: String
+  +descricao: String [0..1]
+  +criadoEm: DateTime
+  +atualizadoEm: DateTime
+}
+
+class MembroProjeto <<E-003>> {
+  +id: Integer
+  +papelProjeto: PapelProjeto
+  +criadoEm: DateTime
+}
+
+class Coluna <<E-004>> {
+  +id: Integer
+  +nome: String
+  +ordem: Integer
+  +criadoEm: DateTime
+}
+
+class Tarefa <<E-005>> {
+  +id: Integer
+  +titulo: String
+  +descricao: String [0..1]
+  +prazo: Date [0..1]
+  +ordem: Integer
+  +criadoEm: DateTime
+  +atualizadoEm: DateTime
+}
+
+class Comentario <<E-006>> {
+  +id: Integer
+  +texto: String
+  +criadoEm: DateTime
+}
+
+class HistoricoMovimentacao <<E-007>> {
+  +id: Integer
+  +colunaOrigemNome: String
+  +colunaDestinoNome: String
+  +criadoEm: DateTime
+}
+
+class Notificacao <<E-008>> {
+  +id: Integer
+  +tipo: TipoNotificacao
+  +statusEnvio: StatusEnvio
+  +tentativas: Integer
+  +criadoEm: DateTime
+  +enviadoEm: DateTime [0..1]
+}
+
+' ======================= Relacionamentos =======================
+' Dono do projeto (além da associação de membro)
+Usuario "1" --> "0..*" Projeto : é dono de >
+
+' Associação Usuário × Projeto com papel (junção / membership)
+Projeto "1" *-- "1..*" MembroProjeto
+Usuario "1" -- "0..*" MembroProjeto
+
+' Estrutura do quadro (composições — cascata na exclusão do projeto)
+Projeto "1" *-- "1..*" Coluna
+Projeto "1" *-- "0..*" Tarefa
+Coluna  "1" --  "0..*" Tarefa : contém >
+
+' Responsável da tarefa (opcional; RN-006: deve ser membro)
+Usuario "0..1" -- "0..*" Tarefa : responsável <
+
+' Comentários e histórico (composições da tarefa)
+Tarefa  "1" *-- "0..*" Comentario
+Usuario "1" --  "0..*" Comentario : autor <
+Tarefa  "1" *-- "0..*" HistoricoMovimentacao
+Usuario "1" --  "0..*" HistoricoMovimentacao : autor <
+
+' Notificações (outbox)
+Usuario "1" -- "0..*" Notificacao : destinatário <
+Tarefa  "1" -- "0..*" Notificacao
+
+' Uso das enumerações
+Usuario       ..> PapelGlobal
+MembroProjeto ..> PapelProjeto
+Notificacao   ..> TipoNotificacao
+Notificacao   ..> StatusEnvio
+
+' ======================= Notas =======================
+note right of MembroProjeto
+  Associação Usuário × Projeto.
+  Par (projeto, usuário) é único.
+  O criador do projeto entra como DONO.
+end note
+
+note right of HistoricoMovimentacao
+  RN-007: registro append-only (imutável).
+  Guarda o snapshot dos nomes das colunas
+  de origem/destino no momento da mudança.
+end note
+
+note bottom of Coluna
+  RN-005: ao criar o projeto, são geradas
+  as colunas padrão Pendente, Em Progresso,
+  Em Revisão e Concluído (customizáveis).
+end note
+
+@enduml
