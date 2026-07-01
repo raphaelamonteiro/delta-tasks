@@ -52,11 +52,12 @@ Diagrama de entidade-relacionamento do banco de dados (gerado no [dbdiagram.io](
 
 <div align="center">
 
-![Python](https://img.shields.io/badge/Python-D71313?style=for-the-badge&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-D71313?style=for-the-badge&logo=FASTAPI&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-D71313?style=for-the-badge&logo=postgresql&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-D71313?style=for-the-badge&logo=docker&logoColor=white)
-![Git](https://img.shields.io/badge/Git-D71313?style=for-the-badge&logo=git&logoColor=white)
+![Python](https://img.shields.io/badge/Python-24B1B1?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-24B1B1?style=for-the-badge&logo=FASTAPI&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-24B1B1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-24B1B1?style=for-the-badge&logo=docker&logoColor=white)
+![Poetry](https://img.shields.io/badge/Poetry-24B1B1?style=for-the-badge&logo=poetry&logoColor=white)
+![Git](https://img.shields.io/badge/Git-24B1B1?style=for-the-badge&logo=git&logoColor=white)
 
 </div>
 
