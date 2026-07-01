@@ -20,10 +20,6 @@ Gerenciador de tarefas ágil baseado no modelo Kanban.
 
 <a id="escopo"></a>
 
-## 📋 Escopo
-
-<a id="escopo"></a>
-
 **Delta** é um gerenciador de tarefas ágil baseado no modelo Kanban, desenvolvido como uma API backend utilizando FastAPI.
 
 O projeto tem como objetivo fornecer uma base sólida para organização, criação e gerenciamento de tarefas.
