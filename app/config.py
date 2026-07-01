@@ -99,7 +99,7 @@ class Settings(BaseSettings):
 
     # Email (Resend)
     RESEND_API_KEY: str = ""
-    RESEND_FROM_EMAIL: str = "no_reply@syncdesk.pro"
+    RESEND_FROM_EMAIL: str = "no_reply@delta.com"
     RUN_RESEND_INTEGRATION_TESTS: bool = False
     RESEND_TEST_TO_EMAIL: str = ""
 

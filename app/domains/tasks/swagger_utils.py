@@ -1,6 +1,19 @@
 from typing import Any
-
+from fastapi import status
 from app.domains.tasks.schemas import TaskHistoryResponse, TaskResponse
+
+create_task_swagger: dict[str, Any] = {
+    "summary": "Criar tarefa",
+    "description": (
+        "Cria uma tarefa"),
+    "status_code": status.HTTP_201_CREATED,
+    "response_model": TaskResponse,
+    "responses": {
+        201: {"description": "Tarefa criada com sucesso."},
+        401: {"description": "Não autenticado."},
+        400: {"description": "Falha de validação (ex.: nome ausente)."},
+    },
+}
 
 get_task_history_swagger: dict[str, Any] = {
     "summary": "Visualizar histórico de movimentações",
@@ -72,3 +85,17 @@ move_task_swagger: dict[str, Any] = {
         404: {"description": "Tarefa não encontrada."},
     },
 }
+
+delete_task_swagger: dict[str, Any] = {
+    "summary": "Excluir tarefa",
+    "description": (
+        "Remove a tarefa e todas as suas associações (membros, comentários). "
+    ),
+    "status_code": status.HTTP_204_NO_CONTENT,
+    "responses": {
+        204: {"description": "Tarefa excluída."},
+        401: {"description": "Não autenticado."},
+        404: {"description": "Tarefa não encontrada."},
+    },
+}
+

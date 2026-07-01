@@ -5,45 +5,48 @@ from fastapi import status
 from app.domains.users.schemas import UserListResponse, UserResponse
 
 list_users_swagger: dict[str, Any] = {
-    "summary": "List users",
-    "description": "Returns a paginated list of users.",
+    "summary": "Lista usuários",
+    "description": "Retorna uma lista paginada de usuários.",
     "response_model": UserListResponse,
     "responses": {
-        200: {"description": "Users listed successfully."},
+        200: {"description": "Usuários listados com sucesso."},
     },
 }
 
 get_user_swagger: dict[str, Any] = {
-    "summary": "Get a user",
-    "description": "Returns a single user by id.",
+    "summary": "Obter usuário",
+    "description": "Retorna um único usuário pelo ID.",
     "response_model": UserResponse,
     "responses": {
-        200: {"description": "User found."},
-        404: {"description": "User not found."},
+        200: {"description": "Usuário encontrado."},
+        404: {"description": "Usuário não encontrado."},
     },
 }
 
 update_user_swagger: dict[str, Any] = {
-    "summary": "Update a user",
-    "description": ("Partially updates a user. " "Returns 409 if the new email is already taken."),
+    "summary": "Atualizar usuário",
+    "description": ( "Atualiza parcialmente um usuário. "
+    "Retorna 409 se o novo e-mail já estiver em uso."),
+
     "response_model": UserResponse,
     "responses": {
-        200: {"description": "User updated successfully."},
-        404: {"description": "User not found."},
-        409: {"description": "Email already registered."},
-        400: {"description": "Request body validation failed."},
+        200: {"description": "Usuário atualizado com sucesso."},
+        404: {"description": "Usuário não encontrado."},
+        409: {"description": "E-mail já cadastrado."},
+        400: {"description": "Falha na validação do corpo da requisição."},
     },
 }
-
+    
 delete_user_swagger: dict[str, Any] = {
-    "summary": "Delete a user",
+    "summary": "Excluir usuário",
     "description": (
-        "Permanently deletes a user. " "Returns 409 if the user still has related records."
+        "Remove permanentemente um usuário. "
+        "Retorna 409 se o usuário ainda possuir registros relacionados."
     ),
     "status_code": status.HTTP_204_NO_CONTENT,
     "responses": {
-        204: {"description": "User deleted successfully."},
-        404: {"description": "User not found."},
-        409: {"description": "User has related records and cannot be deleted."},
+        204: {"description": "Usuário excluído com sucesso."},
+        404: {"description": "Usuário não encontrado."},
+        409: {"description": "Usuário possui registros relacionados e não pode ser excluído."},
     },
 }

@@ -1,10 +1,16 @@
 from datetime import date, datetime
 from uuid import UUID
-
 from pydantic import ConfigDict, Field
-
 from app.core.schemas import BaseDTO
 from app.db.models import TaskHistory
+
+class CreateTaskDTO(BaseDTO):
+    title: str = Field(min_length=1, max_length=120)
+    description: str | None = Field(default=None, max_length=2000)
+    due_date: date | None = None
+    position: int
+    project_id: int
+    stage_id: int
 
 
 class UpdateTaskDTO(BaseDTO):
@@ -12,10 +18,8 @@ class UpdateTaskDTO(BaseDTO):
     description: str | None = Field(default=None, max_length=2000)
     due_date: date | None = Field(default=None)
 
-
 class AssignResponsibleDTO(BaseDTO):
     responsible_id: UUID
-
 
 class MoveTaskDTO(BaseDTO):
     stage_id: int

@@ -1,4 +1,5 @@
 # 🔺Delta
+
 Gerenciador de tarefas ágil baseado no modelo Kanban.
 
 <p> 
@@ -16,10 +17,25 @@ Gerenciador de tarefas ágil baseado no modelo Kanban.
 ---
 
 ## 📋 Escopo
+
 <a id="escopo"></a>
-🚧 Em desenvolvimento...
+
+## 📋 Escopo
+
+<a id="escopo"></a>
+
+**Delta** é um gerenciador de tarefas ágil baseado no modelo Kanban, desenvolvido como uma API backend utilizando FastAPI.
+
+O projeto tem como objetivo fornecer uma base sólida para organização, criação e gerenciamento de tarefas.
+
+A aplicação permite a criação, atualização, listagem e remoção de tarefas organizadas em colunas Kanban (como _To Do_, _In Progress_ e _Done_), garantindo uma visão clara e contínua do fluxo de trabalho.
+
+As tarefas são associadas a usuários, permitindo controle de responsabilidade e isolamento de dados por conta.
+
+O projeto é containerizado com Docker, facilitando o ambiente de desenvolvimento e execução.
 
 ## 🖋️ Diagrama
+
 <a id="diagrama"></a>
 
 Diagrama de entidade-relacionamento do banco de dados (gerado no [dbdiagram.io](https://dbdiagram.io) a partir de [`docs/diagrama.dbml`](docs/diagrama.dbml)):
@@ -30,9 +46,10 @@ Diagrama de entidade-relacionamento do banco de dados (gerado no [dbdiagram.io](
 
 </div>
 
-
 ## 🛠️ Tecnologias
+
 <a id="tecnologias"></a>
+
 <div align="center">
 
 ![Python](https://img.shields.io/badge/Python-D71313?style=for-the-badge&logo=python&logoColor=white)
@@ -44,28 +61,86 @@ Diagrama de entidade-relacionamento do banco de dados (gerado no [dbdiagram.io](
 </div>
 
 ## 🔎 Requisitos
+
 <a id="requisitos"></a>
+
 - Python 3.12+
 - PostgreSQL (configurável via `.env` — veja `.env.example`)
 
-
 ## 📦 Estrutura do Repositório
-<a id="estrutura"></a>
-🚧 Em desenvolvimento...
 
-<!---
+<a id="estrutura"></a>
+
 ```bash
 delta-tasks/
-├── docs/
-│   └── backlog.md               # Documentação com aprendizados e conceitos do sistema
 │
-├── .gitignore                    # Arquivos ignorados pelo Git
-└── README.md                     # Documentação principal do projeto
+├── alembic/
+│   ├── versions/
+│   ├── env.py
+│   └── script.py.mako
+│
+├── app/
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── jwt.py
+│   │   ├── logger.py
+│   │   ├── schemas.py
+│   │   └── security.py
+│   │
+│   ├── db/
+│   │   ├── base.py
+│   │   ├── dependencies.py
+│   │   ├── init_db.py
+│   │   └── models.py
+│   │
+│   ├── domains/
+│   │   ├── auth/
+│   │   ├── users/
+│   │   ├── tasks/
+│   │   └── projects/
+│   │
+│   ├── seed/
+│   │   ├── __init__.py
+│   │   └── run_seed.py
+│   │
+│   ├── config.py
+│   ├── main.py
+│   └── __init__.py
+│
+├── docs/
+│   ├── modulos/
+│   ├── backlog.md
+│   ├── requisitos.md
+│   └── uml.png
+│
+├── logs/
+│   └── .gitkeep
+│
+├── tests/
+│   ├── app/
+│   ├── conftest.py
+│   └── __init__.py
+│
+├── .dockerignore
+├── .env.example
+├── .env.test
+├── alembic.ini
+├── docker-compose.yml
+├── Dockerfile
+├── entrypoint.sh
+├── LICENSE
+├── Makefile
+├── poetry.lock
+├── pyproject.toml
+├── requirements-dev.txt
+├── requirements.txt
+├── run.py
+├── .gitignore
+└── README.md              # Documentação principal (📍 Você está aqui!)
 ```
----->
-
 
 ## ⚙️ Como rodar o projeto?
+
 <a id="rodar"></a>
 
 Há dois caminhos equivalentes. Use **poetry** se já o tem instalado; senão use **pip + venv**.
@@ -90,25 +165,26 @@ make dev            # uvicorn com --reload
 ```
 
 ## 🖥️ Comandos úteis (Makefile)
+
 <a id="comandos"></a>
 
-| Comando                | Descrição                                         |
-| ---------------------- | ------------------------------------------------- |
-| `make dev`             | Sobe a API com reload                             |
-| `make test`            | Roda os testes (pytest)                           |
-| `make lint`            | ruff check + bandit                               |
-| `make format`          | ruff format                                       |
-| `make typecheck`       | mypy (modo estrito)                               |
-| `make migrate`         | Aplica as migrations (alembic upgrade head)       |
-| `make install-pip`     | Instala dependências de runtime via pip           |
-| `make install-pip-dev` | Instala runtime + ferramentas de dev via pip      |
+| Comando                | Descrição                                          |
+| ---------------------- | -------------------------------------------------- |
+| `make dev`             | Sobe a API com reload                              |
+| `make test`            | Roda os testes (pytest)                            |
+| `make lint`            | ruff check + bandit                                |
+| `make format`          | ruff format                                        |
+| `make typecheck`       | mypy (modo estrito)                                |
+| `make migrate`         | Aplica as migrations (alembic upgrade head)        |
+| `make install-pip`     | Instala dependências de runtime via pip            |
+| `make install-pip-dev` | Instala runtime + ferramentas de dev via pip       |
 | `make requirements`    | Regera `requirements*.txt` a partir do poetry.lock |
 
 > Os arquivos `requirements.txt` e `requirements-dev.txt` são **gerados** a partir do `poetry.lock`.
 > Após alterar dependências no `pyproject.toml`, rode `make requirements` para mantê-los em sincronia.
 
-
 ## 📚 Documentação
+
 <a id="documentacao"></a>
 
 Guias para desenvolvedores sobre como usar e estender os módulos da aplicação
@@ -117,9 +193,10 @@ Guias para desenvolvedores sobre como usar e estender os módulos da aplicação
 - [🔐 Módulo de Autenticação](docs/modulos/autenticacao.md) — login com JWT em cookies, refresh, troca de senha e proteção de rotas.
 - [👥 Módulo de Usuários](docs/modulos/usuarios.md) — listagem, consulta, atualização e remoção de contas.
 
-
 ## 👥 Créditos
+
 <a id="creditos"></a>
+
 <div align="center">
 
 | Nome              | Perfil no GitHub                                                                                                                           |

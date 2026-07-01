@@ -17,7 +17,7 @@ class ResponsibleNotMemberError(TaskError):
     def __init__(self, user_id: UUID, project_id: int) -> None:
         self.user_id = user_id
         self.project_id = project_id
-        super().__init__(f"User {user_id} is not a member of project {project_id}")
+        super().__init__(f"O usuário: {user_id} is not a member of project {project_id}")
 
 
 class StageNotInProjectError(TaskError):
