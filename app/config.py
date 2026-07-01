@@ -6,8 +6,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "DeltaTask"
-    PROJECT_DESCRIPTION: str = "Backend e API GATEWAY para o projeto DeltaTask"
+    PROJECT_DESCRIPTION: str = "API Backend do Projeto Delta: Gerenciador de tarefas ágil baseado no modelo Kanban."
     PROJECT_VERSION: str = "0.1.0"
+
 
     @property
     def project_identifier(self) -> str:
