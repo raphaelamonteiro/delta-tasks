@@ -1,32 +1,26 @@
 from collections.abc import Sequence
 from uuid import UUID
-
 from app.core.logger import get_logger
 from app.db.models import Task, TaskHistory
-from app.domains.tasks.exceptions import (
-    ResponsibleNotMemberError,
-    StageNotInProjectError,
-    TaskNotFoundError,
-)
+from app.domains.tasks.exceptions import (ResponsibleNotMemberError, StageNotInProjectError, TaskNotFoundError)
 from app.domains.tasks.repository import TaskRepository
-from app.domains.tasks.schemas import UpdateTaskDTO
+from app.domains.tasks.schemas import (CreateTaskDTO, UpdateTaskDTO)
 
 logger = get_logger("app.tasks.service")
-
 
 class TaskService:
     def __init__(self, repo: TaskRepository):
         self.repo = repo
 
-    async def create_task(self, owner_id: UUID, dto: create_task) -> Task:
-        task = await self.repo.create(owner_id, dto)
-        logger.info("Task created", extra={"task_id": task.id, "owner_id": str(owner_id)} )
-        return project
+    async def create_task(self, responsible_id: UUID, dto: CreateTaskDTO) -> Task:
+        task = await self.repo.create(project_id=dto.project_id, responsible_id=responsible_id,dto=dto)
+        logger.info( "Task created", extra={"task_id": task.id,"responsible_id": str(responsible_id)})
+        return task
 
     async def get_task(self, task_id: int) -> Task:
         task = await self.repo.get(task_id)
         if task is None:
-            raise TaskNotFoundError(task_id)
+            raise TaskNotFoundError(task_id)      
         return task
 
     async def list_history(self, task: Task) -> Sequence[TaskHistory]:

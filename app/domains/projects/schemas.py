@@ -48,7 +48,6 @@ class BoardColumnResponse(BaseDTO):
 
 class ProjectSummaryResponse(BaseDTO):
     model_config = ConfigDict(from_attributes=True)
-
     id: int
     name: str
     description: str | None
@@ -59,7 +58,6 @@ class ProjectSummaryResponse(BaseDTO):
 
 class ProjectBoardResponse(BaseDTO):
     model_config = ConfigDict(from_attributes=True)
-
     id: int
     name: str
     description: str | None

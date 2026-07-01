@@ -8,8 +8,8 @@ from app.domains.tasks.dependencies import TaskServiceDep
 from app.domains.tasks.exceptions import (ResponsibleNotMemberError,
     StageNotInProjectError,
     TaskNotFoundError)
-from app.domains.tasks.schemas import (AssignResponsibleDTO, MoveTaskDTO, TaskHistoryResponse, TaskResponse, UpdateTaskDTO)
-from app.domains.tasks.swagger_utils import (assign_responsible_swagger, get_task_history_swagger, move_task_swagger, update_task_swagger)
+from app.domains.tasks.schemas import (CreateTaskDTO, AssignResponsibleDTO, MoveTaskDTO, TaskHistoryResponse, TaskResponse, UpdateTaskDTO)
+from app.domains.tasks.swagger_utils import (create_task_swagger, assign_responsible_swagger, get_task_history_swagger, move_task_swagger, update_task_swagger)
 
 logger = get_logger("app.tasks.router")
 
@@ -30,10 +30,15 @@ def _require_read_access(task: Task, user: CurrentUser) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not a member of this project.")
 
+@tasks_router.post("", **create_task_swagger)
+async def create_task( dto: CreateTaskDTO,
+    user: CurrentUserDep,
+    service: TaskServiceDep) -> TaskResponse:
+    task = await service.create_task(user.id, dto)
+    return TaskResponse.model_validate(task)
 
 @tasks_router.get("/{task_id}/history", **get_task_history_swagger)
-async def get_task_history(
-    task_id: int,
+async def get_task_history( task_id: int,
     user: CurrentUserDep,
     service: TaskServiceDep) -> list[TaskHistoryResponse]:
     try:
@@ -42,14 +47,12 @@ async def get_task_history(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found.") from exc
 
     _require_read_access(task, user)
-
     history = await service.list_history(task)
     return [TaskHistoryResponse.from_history(record) for record in history]
 
 
 @tasks_router.patch("/{task_id}", **update_task_swagger)
-async def update_task(
-    task_id: int,
+async def update_task( task_id: int,
     dto: UpdateTaskDTO,
     user: CurrentUserDep,
     service: TaskServiceDep) -> TaskResponse:
@@ -59,7 +62,6 @@ async def update_task(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found." ) from exc
 
     _require_write_access(task, user)
-
     task = await service.update_task(task, dto)
     return TaskResponse.model_validate(task)
 

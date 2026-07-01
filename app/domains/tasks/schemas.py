@@ -9,9 +9,8 @@ class CreateTaskDTO(BaseDTO):
     description: str | None = Field(default=None, max_length=2000)
     due_date: date | None = None
     position: int
-    project_id: UUID
+    project_id: int
     stage_id: int
-    responsible_id: UUID
 
 
 class UpdateTaskDTO(BaseDTO):
