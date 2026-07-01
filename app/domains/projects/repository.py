@@ -11,7 +11,6 @@ from app.domains.projects.schemas import CreateProjectDTO
 
 _BOARD_OPTIONS = selectinload(Project.stages).selectinload(Stage.tasks)
 
-
 class ProjectRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db

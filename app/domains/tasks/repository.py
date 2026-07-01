@@ -122,3 +122,7 @@ class TaskRepository:
         task.stage_id = dest.id
         task.position = new_position
         return task
+    
+    async def delete(self, task: Task) -> None:
+        await self.db.delete(task)
+        await self.db.commit()

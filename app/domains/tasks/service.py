@@ -75,3 +75,8 @@ class TaskService:
             recipients.add(task.responsible_id)
         recipients.discard(author_id)
         return recipients
+
+    async def delete_task(self, task: Task) -> None:
+        task_id = task.id
+        await self.repo.delete(task)
+        logger.info("Task deleted", extra={"task_id": task_id})

@@ -9,7 +9,7 @@ from app.domains.tasks.exceptions import (ResponsibleNotMemberError,
     StageNotInProjectError,
     TaskNotFoundError)
 from app.domains.tasks.schemas import (CreateTaskDTO, AssignResponsibleDTO, MoveTaskDTO, TaskHistoryResponse, TaskResponse, UpdateTaskDTO)
-from app.domains.tasks.swagger_utils import (create_task_swagger, assign_responsible_swagger, get_task_history_swagger, move_task_swagger, update_task_swagger)
+from app.domains.tasks.swagger_utils import (create_task_swagger, assign_responsible_swagger, get_task_history_swagger, move_task_swagger, update_task_swagger, delete_task_swagger)
 
 logger = get_logger("app.tasks.router")
 
@@ -106,3 +106,19 @@ async def move_task(
             detail="The destination column does not belong to the task's project.") from exc
 
     return TaskResponse.model_validate(task)
+
+
+@tasks_router.delete("/{task_id}", **delete_task_swagger)
+async def delete_task(
+    task_id: int,
+    user: CurrentUserDep,
+    service: TaskServiceDep) -> None:
+    try:
+        task = await service.get_task(task_id)
+    except TaskNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found.",) from exc
+    
+    _require_write_access(task, user)
+    await service.delete_task(task)

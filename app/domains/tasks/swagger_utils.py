@@ -85,3 +85,17 @@ move_task_swagger: dict[str, Any] = {
         404: {"description": "Tarefa não encontrada."},
     },
 }
+
+delete_task_swagger: dict[str, Any] = {
+    "summary": "Excluir tarefa",
+    "description": (
+        "Remove a tarefa e todas as suas associações (membros, comentários). "
+    ),
+    "status_code": status.HTTP_204_NO_CONTENT,
+    "responses": {
+        204: {"description": "Tarefa excluída."},
+        401: {"description": "Não autenticado."},
+        404: {"description": "Tarefa não encontrada."},
+    },
+}
+
