@@ -136,7 +136,7 @@ delta-tasks/
 ├── requirements.txt
 ├── run.py
 ├── .gitignore
-└── README.md              # Documentação principal
+└── README.md              # Documentação principal (📍 Você está aqui!)
 ```
 
 ## ⚙️ Como rodar o projeto?
