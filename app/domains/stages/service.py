@@ -23,7 +23,8 @@ class StageService:
         return await self.repo.update(stage, dto.name)
 
 
-    async def delete_stage(self, stage: Stage):
+    async def delete_stage(self, stage):
+
         if stage.tasks:
             raise ValueError("Cannot delete stage with tasks. Move tasks first.")
         await self.repo.delete(stage)

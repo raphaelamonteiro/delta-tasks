@@ -1,5 +1,6 @@
 from sqlalchemy import select
 from collections.abc import Sequence
+from sqlalchemy.orm import selectinload
 from app.db.models import Stage
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,11 +18,11 @@ class StageRepository:
             await self.db.commit()
             await self.db.refresh(stage)
             return stage
-
+        
         async def get(self, stage_id: int):
-            result = await self.db.execute(select(Stage).where(Stage.id == stage_id))
+            result = await self.db.execute(select(Stage).where(Stage.id == stage_id).options(selectinload(Stage.tasks)))
             return result.scalar_one_or_none()
-
+        
         async def list_by_project(self, project_id: int) -> Sequence[Stage]:
             result = await self.db.execute(select(Stage).where(Stage.project_id == project_id).order_by(Stage.position))
             return result.scalars().all()
