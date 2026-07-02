@@ -9,20 +9,13 @@ from app.domains.projects.schemas import CreateProjectDTO, UpdateProjectDTO
 
 logger = get_logger("app.projects.service")
 
-DEFAULT_COLUMNS = ("Pendente", "Em Progresso", "Em Revisão", "Concluído")
-
 
 class ProjectService:
     def __init__(self, repo: ProjectRepository):
         self.repo = repo
 
-    async def create_project(self, owner_id: UUID, dto: CreateProjectDTO) -> Project:
-        project = await self.repo.create(owner_id, dto, DEFAULT_COLUMNS)
-        logger.info(
-            "Project created",
-            extra={"project_id": project.id, "owner_id": str(owner_id)},
-        )
-        return project
+    async def create_project(self, owner_id: UUID, dto: CreateProjectDTO):
+        return await self.repo.create(owner_id, dto)
 
     async def list_user_projects(self, user_id: UUID) -> Sequence[Project]:
         return await self.repo.list_for_user(user_id)

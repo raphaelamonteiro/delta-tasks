@@ -13,19 +13,11 @@ class TaskRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def create_task(self, project_id: int, responsible_id: UUID, dto: CreateTaskDTO) -> Task:
-        task = await self.repo.create(project_id, responsible_id, dto)
-
-        logger.info("Task created",
-        extra={"task_id": task.id, "responsible_id": str(responsible_id)})
-        return task
-
     async def create( self, project_id: int, responsible_id: UUID, dto: CreateTaskDTO ) -> Task:
         task = Task(title=dto.title, description=dto.description, project_id=project_id,
         stage_id=dto.stage_id, responsible_id=responsible_id, due_date=dto.due_date, position=dto.position)
 
         self.db.add(task)
-
         await self.db.commit()
         await self.db.refresh(task)
         return task
