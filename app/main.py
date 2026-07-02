@@ -14,6 +14,7 @@ from app.domains.auth.router import auth_router
 from app.domains.projects.router import projects_router
 from app.domains.tasks.router import tasks_router
 from app.domains.users.router import users_router
+from app.domains.stages.router import stages_router
 
 
 @asynccontextmanager
@@ -31,23 +32,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 async def validation_exception_handler(_request: Request, exc: Exception) -> JSONResponse:
     errors: Sequence[Any] = exc.errors() if isinstance(exc, RequestValidationError) else []
-    return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        content={"detail": jsonable_encoder(errors)},
-    )
-
+    return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"detail": jsonable_encoder(errors)})
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(
-        title=settings.PROJECT_NAME,
+    app = FastAPI(title=settings.PROJECT_NAME,
         description=settings.PROJECT_DESCRIPTION,
-        version=settings.PROJECT_VERSION,
-        lifespan=lifespan,
-    )
+        version=settings.PROJECT_VERSION, 
+        lifespan=lifespan)
+    
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.include_router(auth_router)
     app.include_router(users_router)
     app.include_router(projects_router)
     app.include_router(tasks_router)
+    app.include_router(stages_router)
     return app

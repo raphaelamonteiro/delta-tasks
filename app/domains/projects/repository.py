@@ -11,25 +11,23 @@ from app.domains.projects.schemas import CreateProjectDTO
 
 _BOARD_OPTIONS = selectinload(Project.stages).selectinload(Stage.tasks)
 
+DEFAULT_COLUMNS = ("Pendente", "Em Progresso", "Em Revisão", "Concluído")
+
 class ProjectRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
     async def create(
-        self, owner_id: UUID, dto: CreateProjectDTO, column_names: Sequence[str]
-    ) -> Project:
+        self, owner_id: UUID, dto: CreateProjectDTO, column_names: Sequence[str] = DEFAULT_COLUMNS) -> Project:
         project = Project(name=dto.name, description=dto.description, owner_id=owner_id)
         project.members.append(ProjectMember(user_id=owner_id, role=ProjectRole.OWNER))
-        project.stages = [
-            Stage(name=name, position=position) for position, name in enumerate(column_names)
-        ]
+        project.stages = [Stage(name=name, position=position) for position, name in enumerate(column_names)]
 
         self.db.add(project)
         await self.db.commit()
 
         result = await self.db.execute(
-            select(Project).where(Project.id == project.id).options(_BOARD_OPTIONS)
-        )
+            select(Project).where(Project.id == project.id).options(_BOARD_OPTIONS))
         return result.scalars().one()
 
     async def list_for_user(self, user_id: UUID) -> Sequence[Project]:
@@ -37,8 +35,7 @@ class ProjectRepository:
             select(Project)
             .join(ProjectMember, ProjectMember.project_id == Project.id)
             .where(ProjectMember.user_id == user_id)
-            .order_by(Project.created_at)
-        )
+            .order_by(Project.created_at))
         return result.scalars().all()
 
     async def get_board(self, project_id: int) -> Project | None:
