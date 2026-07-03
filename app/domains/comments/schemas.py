@@ -20,3 +20,14 @@ class CommentResponse(BaseDTO):
     author_id: UUID
     body: str
     created_at: datetime
+
+    @classmethod
+    def from_comment(cls, comment: Comment) -> "CommentResponse":
+        return cls(
+            id=comment.id,
+            task_id=comment.task_id,
+            project_id=comment.task.project_id,
+            author_id=comment.author_id,
+            body=comment.body,
+            created_at=comment.created_at,
+        )
