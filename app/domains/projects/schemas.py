@@ -1,10 +1,14 @@
 from datetime import date, datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
 
 from app.core.schemas import BaseDTO
-from app.db.models import Project, Stage
+from app.db.models import Project, ProjectMember, ProjectRole, Stage
+
+# Papéis que o dono pode atribuir a um membro (o papel DONO é exclusivo do criador).
+AssignableRole = Literal[ProjectRole.MEMBER, ProjectRole.OBSERVER]
 
 
 class CreateProjectDTO(BaseDTO):
@@ -15,6 +19,33 @@ class CreateProjectDTO(BaseDTO):
 class UpdateProjectDTO(BaseDTO):
     name: str | None = Field(default=None, min_length=1, max_length=120)
     description: str | None = Field(default=None, max_length=2000)
+
+
+class AddMemberDTO(BaseDTO):
+    user_id: UUID
+    role: AssignableRole = ProjectRole.MEMBER
+
+
+class UpdateMemberRoleDTO(BaseDTO):
+    role: AssignableRole
+
+
+class ProjectMemberResponse(BaseDTO):
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: UUID
+    name: str
+    email: str
+    role: ProjectRole
+
+    @classmethod
+    def from_member(cls, member: ProjectMember) -> "ProjectMemberResponse":
+        return cls(
+            user_id=member.user_id,
+            name=member.user.name,
+            email=member.user.email,
+            role=member.role,
+        )
 
 
 class TaskCardResponse(BaseDTO):
