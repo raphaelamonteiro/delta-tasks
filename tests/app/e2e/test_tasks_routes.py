@@ -604,3 +604,157 @@ async def test_history_has_no_update_or_delete_endpoint(
 
     assert patched.status_code == 405
     assert deleted.status_code == 405
+
+
+async def test_create_task_requires_authentication(client: AsyncClient) -> None:
+    response = await client.post(
+        "/tasks", json={"title": "T", "position": 0, "project_id": 1, "stage_id": 1}
+    )
+    assert response.status_code == 401
+
+
+async def test_create_task_by_member_appears_on_board(
+    client: AsyncClient,
+    regular_user: User,
+    make_user: UserFactory,
+    db_session: AsyncSession,
+) -> None:
+    await login_as(client, regular_user.email)
+    project_id, _, stage_ids = await _create_board_with_task(client, db_session)
+    member = await make_user(email="member@example.com")
+    await _add_member(db_session, project_id, member, ProjectRole.MEMBER)
+
+    await login_as(client, member.email)
+    response = await client.post(
+        "/tasks",
+        json={
+            "title": "Nova tarefa",
+            "position": 1,
+            "project_id": project_id,
+            "stage_id": stage_ids[0],
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["stage_id"] == stage_ids[0]
+    assert body["responsible_id"] == str(member.id)
+
+    board = await client.get(f"/projects/{project_id}")
+    titles = [card["title"] for card in board.json()["columns"][0]["tasks"]]
+    assert "Nova tarefa" in titles
+
+
+async def test_create_task_forbidden_for_observer(
+    client: AsyncClient,
+    regular_user: User,
+    make_user: UserFactory,
+    db_session: AsyncSession,
+) -> None:
+    await login_as(client, regular_user.email)
+    project_id, _, stage_ids = await _create_board_with_task(client, db_session)
+    observer = await make_user(email="observer@example.com")
+    await _add_member(db_session, project_id, observer, ProjectRole.OBSERVER)
+
+    await login_as(client, observer.email)
+    response = await client.post(
+        "/tasks",
+        json={"title": "T", "position": 0, "project_id": project_id, "stage_id": stage_ids[0]},
+    )
+
+    assert response.status_code == 403
+
+
+async def test_create_task_forbidden_for_non_member(
+    client: AsyncClient,
+    regular_user: User,
+    make_user: UserFactory,
+    db_session: AsyncSession,
+) -> None:
+    await login_as(client, regular_user.email)
+    project_id, _, stage_ids = await _create_board_with_task(client, db_session)
+    outsider = await make_user(email="outsider@example.com")
+
+    await login_as(client, outsider.email)
+    response = await client.post(
+        "/tasks",
+        json={"title": "T", "position": 0, "project_id": project_id, "stage_id": stage_ids[0]},
+    )
+
+    assert response.status_code == 403
+
+
+async def test_create_task_with_column_of_other_project_returns_400(
+    client: AsyncClient, regular_user: User, db_session: AsyncSession
+) -> None:
+    await login_as(client, regular_user.email)
+    project_id, _, _ = await _create_board_with_task(client, db_session)
+    other = await client.post("/projects", json={"name": "Outro quadro"})
+    other_stage_id = other.json()["columns"][0]["id"]
+
+    response = await client.post(
+        "/tasks",
+        json={"title": "T", "position": 0, "project_id": project_id, "stage_id": other_stage_id},
+    )
+
+    assert response.status_code == 400
+
+
+async def test_delete_task_requires_authentication(client: AsyncClient) -> None:
+    response = await client.delete("/tasks/1")
+    assert response.status_code == 401
+
+
+async def test_delete_task_removes_it_from_board(
+    client: AsyncClient, regular_user: User, db_session: AsyncSession
+) -> None:
+    await login_as(client, regular_user.email)
+    project_id, task_id = await _create_project_with_task(client, db_session)
+
+    response = await client.delete(f"/tasks/{task_id}")
+
+    assert response.status_code == 204
+    remaining = await db_session.execute(select(Task).where(Task.id == task_id))
+    assert remaining.scalar_one_or_none() is None
+
+    board = await client.get(f"/projects/{project_id}")
+    assert board.json()["columns"][0]["tasks"] == []
+
+
+async def test_delete_task_forbidden_for_observer(
+    client: AsyncClient,
+    regular_user: User,
+    make_user: UserFactory,
+    db_session: AsyncSession,
+) -> None:
+    await login_as(client, regular_user.email)
+    project_id, task_id = await _create_project_with_task(client, db_session)
+    observer = await make_user(email="observer@example.com")
+    await _add_member(db_session, project_id, observer, ProjectRole.OBSERVER)
+
+    await login_as(client, observer.email)
+    response = await client.delete(f"/tasks/{task_id}")
+
+    assert response.status_code == 403
+
+
+async def test_delete_task_forbidden_for_non_member(
+    client: AsyncClient,
+    regular_user: User,
+    make_user: UserFactory,
+    db_session: AsyncSession,
+) -> None:
+    await login_as(client, regular_user.email)
+    _, task_id = await _create_project_with_task(client, db_session)
+    outsider = await make_user(email="outsider@example.com")
+
+    await login_as(client, outsider.email)
+    response = await client.delete(f"/tasks/{task_id}")
+
+    assert response.status_code == 403
+
+
+async def test_delete_task_not_found(client: AsyncClient, regular_user: User) -> None:
+    await login_as(client, regular_user.email)
+    response = await client.delete("/tasks/999999")
+    assert response.status_code == 404
