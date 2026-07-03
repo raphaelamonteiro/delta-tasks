@@ -67,7 +67,7 @@ class Settings(BaseSettings):
 
     # First admin bootstrap (used by `make seed`)
     SEED_ADMIN_NAME: str = "Admin"
-    SEED_ADMIN_EMAIL: str = "admin@deltatask.local"
+    SEED_ADMIN_EMAIL: str = "admin@deltatask.com"
     SEED_ADMIN_PASSWORD: str = "change-me-please"
 
     @property

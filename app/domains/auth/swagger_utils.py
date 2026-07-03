@@ -61,7 +61,7 @@ login_swagger: dict[str, Any] = {
             "content": {
                 "application/json": {
                     "example": {
-                        "email": "admin@deltatask.local",
+                        "email": "admin@deltatask.com",
                         "password": "change-me-please",
                     }
                 }

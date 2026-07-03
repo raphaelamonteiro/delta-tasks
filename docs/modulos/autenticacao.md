@@ -319,7 +319,7 @@ Os cookies são HttpOnly; use um cookie jar (`-c` para gravar, `-b` para enviar)
 # 1. Login do admin (criado via `make seed`)
 curl -c cookies.txt -X POST http://127.0.0.1:8000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@deltatask.local","password":"SUA_SENHA_DE_SEED"}'
+  -d '{"email":"admin@deltatask.com","password":"SUA_SENHA_DE_SEED"}'
 
 # 2. Admin cria um usuário comum
 curl -b cookies.txt -X POST http://127.0.0.1:8000/auth/register \
