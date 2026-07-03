@@ -15,6 +15,7 @@ from app.domains.projects.router import projects_router
 from app.domains.tasks.router import tasks_router
 from app.domains.users.router import users_router
 from app.domains.stages.router import stages_router
+from app.domains.comments.router import comments_router
 
 
 @asynccontextmanager
@@ -47,4 +48,5 @@ def create_app() -> FastAPI:
     app.include_router(projects_router)
     app.include_router(tasks_router)
     app.include_router(stages_router)
+    app.include_router(comments_router)
     return app
