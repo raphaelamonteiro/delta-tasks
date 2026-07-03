@@ -10,7 +10,7 @@ from app.domains.tasks.exceptions import (
     StageNotInProjectError,
     TaskNotFoundError,
 )
-from app.domains.tasks.schemas import UpdateTaskDTO
+from app.domains.tasks.schemas import CreateTaskDTO, UpdateTaskDTO
 from app.domains.tasks.service import TaskService
 
 
@@ -229,3 +229,51 @@ async def test_list_history_delegates_to_repository(service: TaskService, repo: 
 
     assert await service.list_history(task) == history
     repo.list_history.assert_awaited_once_with(5)
+
+
+async def test_create_task_delegates_when_stage_in_project(
+    service: TaskService, repo: AsyncMock
+) -> None:
+    responsible_id = uuid4()
+    dto = CreateTaskDTO(title="T", position=0, project_id=7, stage_id=10)
+    task = Task(id=1, project_id=7, stage_id=10, title="T", position=0)
+    repo.get_stages.return_value = {10: Stage(id=10, project_id=7, name="Pendente", position=0)}
+    repo.create.return_value = task
+
+    result = await service.create_task(responsible_id, dto)
+
+    assert result is task
+    repo.get_stages.assert_awaited_once_with({10})
+    repo.create.assert_awaited_once_with(project_id=7, responsible_id=responsible_id, dto=dto)
+
+
+async def test_create_task_rejects_stage_of_other_project(
+    service: TaskService, repo: AsyncMock
+) -> None:
+    dto = CreateTaskDTO(title="T", position=0, project_id=7, stage_id=20)
+    repo.get_stages.return_value = {20: Stage(id=20, project_id=99, name="Outra", position=0)}
+
+    with pytest.raises(StageNotInProjectError):
+        await service.create_task(uuid4(), dto)
+
+    repo.create.assert_not_awaited()
+
+
+async def test_create_task_rejects_unknown_stage(service: TaskService, repo: AsyncMock) -> None:
+    dto = CreateTaskDTO(title="T", position=0, project_id=7, stage_id=20)
+    repo.get_stages.return_value = {}
+
+    with pytest.raises(StageNotInProjectError):
+        await service.create_task(uuid4(), dto)
+
+    repo.create.assert_not_awaited()
+
+
+async def test_delete_task_delegates_to_repository(
+    service: TaskService, repo: AsyncMock
+) -> None:
+    task = Task(id=5, project_id=7, stage_id=10, title="T", position=0)
+
+    await service.delete_task(task)
+
+    repo.delete.assert_awaited_once_with(task)

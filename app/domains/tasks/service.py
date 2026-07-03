@@ -13,8 +13,17 @@ class TaskService:
         self.repo = repo
 
     async def create_task(self, responsible_id: UUID, dto: CreateTaskDTO) -> Task:
-        task = await self.repo.create(project_id=dto.project_id, responsible_id=responsible_id,dto=dto)
-        logger.info( "Task created", extra={"task_id": task.id,"responsible_id": str(responsible_id)})
+        stages = await self.repo.get_stages({dto.stage_id})
+        stage = stages.get(dto.stage_id)
+        if stage is None or stage.project_id != dto.project_id:
+            raise StageNotInProjectError(dto.stage_id, dto.project_id)
+
+        task = await self.repo.create(
+            project_id=dto.project_id, responsible_id=responsible_id, dto=dto
+        )
+        logger.info(
+            "Task created", extra={"task_id": task.id, "responsible_id": str(responsible_id)}
+        )
         return task
 
     async def get_task(self, task_id: int) -> Task:

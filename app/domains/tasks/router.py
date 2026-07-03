@@ -18,10 +18,16 @@ _WRITE_ROLES = frozenset({ProjectRole.OWNER, ProjectRole.MEMBER})
 tasks_router = APIRouter(prefix="/tasks", tags=["Tasks"], dependencies=[Depends(get_current_user)])
 
 
+def _require_project_write_access(project_id: int, user: CurrentUser) -> None:
+    if user.role_in(project_id) not in _WRITE_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to modify tasks in this project.",
+        )
+
+
 def _require_write_access(task: Task, user: CurrentUser) -> None:
-    if user.role_in(task.project_id) not in _WRITE_ROLES:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to modify tasks in this project.")
+    _require_project_write_access(task.project_id, user)
 
 
 def _require_read_access(task: Task, user: CurrentUser) -> None:
@@ -34,7 +40,14 @@ def _require_read_access(task: Task, user: CurrentUser) -> None:
 async def create_task( dto: CreateTaskDTO,
     user: CurrentUserDep,
     service: TaskServiceDep) -> TaskResponse:
-    task = await service.create_task(user.id, dto)
+    _require_project_write_access(dto.project_id, user)
+    try:
+        task = await service.create_task(user.id, dto)
+    except StageNotInProjectError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The column does not belong to the task's project.",
+        ) from exc
     return TaskResponse.model_validate(task)
 
 @tasks_router.get("/{task_id}/history", **get_task_history_swagger)

@@ -11,6 +11,7 @@ create_task_swagger: dict[str, Any] = {
     "responses": {
         201: {"description": "Tarefa criada com sucesso."},
         401: {"description": "Não autenticado."},
+        403: {"description": "Sem permissão para criar tarefas neste projeto."},
         400: {"description": "Falha de validação (ex.: nome ausente)."},
     },
 }

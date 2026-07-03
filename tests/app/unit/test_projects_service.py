@@ -5,8 +5,9 @@ import pytest
 
 from app.db.models import Project
 from app.domains.projects.exceptions import ProjectNotFoundError
+from app.domains.projects.repository import DEFAULT_COLUMNS
 from app.domains.projects.schemas import CreateProjectDTO, UpdateProjectDTO
-from app.domains.projects.service import DEFAULT_COLUMNS, ProjectService
+from app.domains.projects.service import ProjectService
 
 
 @pytest.fixture
@@ -19,7 +20,7 @@ def service(repo: AsyncMock) -> ProjectService:
     return ProjectService(repo=repo)
 
 
-async def test_create_project_delegates_with_default_columns(
+async def test_create_project_delegates_to_repository(
     service: ProjectService, repo: AsyncMock
 ) -> None:
     created = Project(id=1, name="Quadro", owner_id=uuid4())
@@ -30,7 +31,7 @@ async def test_create_project_delegates_with_default_columns(
     result = await service.create_project(owner_id, dto)
 
     assert result is created
-    repo.create.assert_awaited_once_with(owner_id, dto, DEFAULT_COLUMNS)
+    repo.create.assert_awaited_once_with(owner_id, dto)
 
 
 def test_default_columns_follow_rn005() -> None:
