@@ -8,6 +8,7 @@ Gerenciador de tarefas ágil baseado no modelo Kanban.
 <a href="#tecnologias">Tecnologias</a> | 
 <a href="#requisitos">Requisitos</a> | 
 <a href="#estrutura">Estrutura</a> | 
+<a href="#padroes">Padrões</a> | 
 <a href="#rodar">Como rodar</a> | 
 <a href="#comandos">Comandos</a> |
 <a href="#documentacao">Documentação</a> |
@@ -39,6 +40,22 @@ Diagrama de entidade-relacionamento do banco de dados (gerado no [dbdiagram.io](
 <div align="center">
 
 ![Diagrama do banco de dados Delta Tasks](docs/uml.png)
+
+</div>
+
+### Diagrama de Casos de Uso (MVP)
+
+<div align="center">
+
+![Diagrama de Casos de Uso Delta Tasks](docs/diagrams/cassos-de-uso.png)
+
+</div>
+
+### Diagrama de Classes de Domínio (MVP)
+
+<div align="center">
+
+![Diagrama de Classes de Domínio Delta Tasks](docs/diagrams/classes-dominio.png)
 
 </div>
 
@@ -136,6 +153,29 @@ delta-tasks/
 ├── .gitignore
 └── README.md              # Documentação principal (📍 Você está aqui!)
 ```
+
+## 🧩 Padrões de Projeto
+
+<a id="padroes"></a>
+
+Padrões implementados manualmente pela aplicação (desconsiderando o que FastAPI, SQLAlchemy e Pydantic já oferecem).
+
+### Arquiteturais
+
+- **Repository** — acesso a dados isolado em classes `*Repository` por domínio ([`tasks/repository.py`](app/domains/tasks/repository.py)); o serviço nunca usa SQLAlchemy diretamente.
+- **Service Layer** — regras de negócio (RN-xxx) concentradas em classes `*Service` ([`tasks/service.py`](app/domains/tasks/service.py)); fluxo estrito _router → service → repository_.
+- **DTO** — contratos da API separados do modelo de domínio, com base que proíbe campos extras ([`core/schemas.py`](app/core/schemas.py)); entrada, atualização e resposta são objetos distintos.
+- **Guard / Policy** — regras de autorização centralizadas em funções de guarda ([`tasks/router.py`](app/domains/tasks/router.py), [`require_admin`](app/domains/auth/dependencies.py)).
+- **Exceções de domínio + tradução na borda** — exceção base por domínio ([`tasks/exceptions.py`](app/domains/tasks/exceptions.py)) traduzida para HTTP no router; o domínio não conhece códigos HTTP.
+
+### GoF / idiomáticos
+
+- **Factory Method** — construtores nomeados `CurrentUser.from_user()` e `TaskHistoryResponse.from_history()`.
+- **Singleton (via `@lru_cache`)** — instância única de `get_settings()` ([`config.py`](app/config.py)) e da raiz de logging ([`logger.py`](app/core/logger.py)).
+- **Adapter / Facade** — bibliotecas de terceiros encapsuladas atrás de interface própria: `JWTService` (pyjwt), `PasswordSecurity` (passlib), `Logger` (stdlib).
+- **Value Object** — `CurrentUser`, dataclass imutável que carrega um _snapshot_ dos papéis por projeto e autoriza sem reconsultar o banco ([`principal.py`](app/domains/auth/principal.py)).
+- **Strategy** — decodificador injetado em `AuthService._user_from_token()`; formatter escolhido por ambiente (`DevFormatter`/`JsonFormatter`).
+- **Producer-Consumer** — logging assíncrono com `QueueHandler` → `QueueListener`, desacoplando emissão de escrita ([`logger.py`](app/core/logger.py)).
 
 ## ⚙️ Como rodar o projeto?
 
