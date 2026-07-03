@@ -3,8 +3,14 @@ from uuid import uuid4
 
 import pytest
 
-from app.db.models import Project
-from app.domains.projects.exceptions import ProjectNotFoundError
+from app.db.models import Project, ProjectMember, ProjectRole
+from app.domains.projects.exceptions import (
+    DuplicateMemberError,
+    MemberUserNotFoundError,
+    OwnerMembershipError,
+    ProjectMemberNotFoundError,
+    ProjectNotFoundError,
+)
 from app.domains.projects.repository import DEFAULT_COLUMNS
 from app.domains.projects.schemas import CreateProjectDTO, UpdateProjectDTO
 from app.domains.projects.service import ProjectService
@@ -110,3 +116,100 @@ async def test_delete_project_delegates(service: ProjectService, repo: AsyncMock
     await service.delete_project(project)
 
     repo.delete.assert_awaited_once_with(project)
+
+
+async def test_add_member_delegates_when_new_user(
+    service: ProjectService, repo: AsyncMock
+) -> None:
+    user_id = uuid4()
+    member = ProjectMember(project_id=1, user_id=user_id, role=ProjectRole.MEMBER)
+    repo.user_exists.return_value = True
+    repo.get_member.return_value = None
+    repo.add_member.return_value = member
+
+    result = await service.add_member(1, user_id, ProjectRole.MEMBER)
+
+    assert result is member
+    repo.add_member.assert_awaited_once_with(1, user_id, ProjectRole.MEMBER)
+
+
+async def test_add_member_raises_when_user_missing(
+    service: ProjectService, repo: AsyncMock
+) -> None:
+    repo.user_exists.return_value = False
+
+    with pytest.raises(MemberUserNotFoundError):
+        await service.add_member(1, uuid4(), ProjectRole.MEMBER)
+    repo.add_member.assert_not_awaited()
+
+
+async def test_add_member_raises_on_duplicate(
+    service: ProjectService, repo: AsyncMock
+) -> None:
+    user_id = uuid4()
+    repo.user_exists.return_value = True
+    repo.get_member.return_value = ProjectMember(
+        project_id=1, user_id=user_id, role=ProjectRole.OBSERVER
+    )
+
+    with pytest.raises(DuplicateMemberError):
+        await service.add_member(1, user_id, ProjectRole.MEMBER)
+    repo.add_member.assert_not_awaited()
+
+
+async def test_update_member_role_delegates(
+    service: ProjectService, repo: AsyncMock
+) -> None:
+    user_id = uuid4()
+    member = ProjectMember(project_id=1, user_id=user_id, role=ProjectRole.OBSERVER)
+    repo.get_member.return_value = member
+    repo.update_member_role.return_value = member
+
+    await service.update_member_role(1, user_id, ProjectRole.MEMBER)
+
+    repo.update_member_role.assert_awaited_once_with(member, ProjectRole.MEMBER)
+
+
+async def test_update_member_role_raises_when_missing(
+    service: ProjectService, repo: AsyncMock
+) -> None:
+    repo.get_member.return_value = None
+
+    with pytest.raises(ProjectMemberNotFoundError):
+        await service.update_member_role(1, uuid4(), ProjectRole.MEMBER)
+
+
+async def test_update_member_role_rejects_owner(
+    service: ProjectService, repo: AsyncMock
+) -> None:
+    user_id = uuid4()
+    repo.get_member.return_value = ProjectMember(
+        project_id=1, user_id=user_id, role=ProjectRole.OWNER
+    )
+
+    with pytest.raises(OwnerMembershipError):
+        await service.update_member_role(1, user_id, ProjectRole.OBSERVER)
+    repo.update_member_role.assert_not_awaited()
+
+
+async def test_remove_member_delegates(service: ProjectService, repo: AsyncMock) -> None:
+    user_id = uuid4()
+    member = ProjectMember(project_id=1, user_id=user_id, role=ProjectRole.MEMBER)
+    repo.get_member.return_value = member
+
+    await service.remove_member(1, user_id)
+
+    repo.remove_member.assert_awaited_once_with(member)
+
+
+async def test_remove_member_rejects_owner(
+    service: ProjectService, repo: AsyncMock
+) -> None:
+    user_id = uuid4()
+    repo.get_member.return_value = ProjectMember(
+        project_id=1, user_id=user_id, role=ProjectRole.OWNER
+    )
+
+    with pytest.raises(OwnerMembershipError):
+        await service.remove_member(1, user_id)
+    repo.remove_member.assert_not_awaited()
