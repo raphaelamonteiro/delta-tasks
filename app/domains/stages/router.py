@@ -11,6 +11,12 @@ from app.domains.stages.schemas import (
     StageResponse,
     UpdateStageDTO,
 )
+from app.domains.stages.swagger_utils import (
+    create_stage_swagger,
+    delete_stage_swagger,
+    reorder_stages_swagger,
+    update_stage_swagger,
+)
 
 stages_router = APIRouter(
     prefix="/stages",
@@ -35,7 +41,7 @@ def _require_owner(project_id: int, user: CurrentUser) -> None:
         )
 
 
-@stages_router.post("", response_model=StageResponse, status_code=status.HTTP_201_CREATED)
+@stages_router.post("", **create_stage_swagger)
 async def create_stage(
     dto: CreateStageDTO,
     user: CurrentUserDep,
@@ -72,7 +78,7 @@ async def list_project_stages(
     return [StageResponse.model_validate(stage) for stage in stages]
 
 
-@stages_router.put("/project/{project_id}/reorder", response_model=list[StageResponse])
+@stages_router.put("/project/{project_id}/reorder", **reorder_stages_swagger)
 async def reorder_stages(
     project_id: int,
     dto: ReorderStagesDTO,
@@ -90,7 +96,7 @@ async def reorder_stages(
     return [StageResponse.model_validate(stage) for stage in stages]
 
 
-@stages_router.patch("/{stage_id}", response_model=StageResponse)
+@stages_router.patch("/{stage_id}", **update_stage_swagger)
 async def update_stage(
     stage_id: int,
     dto: UpdateStageDTO,
@@ -107,7 +113,7 @@ async def update_stage(
     return StageResponse.model_validate(stage)
 
 
-@stages_router.delete("/{stage_id}", status_code=status.HTTP_204_NO_CONTENT)
+@stages_router.delete("/{stage_id}", **delete_stage_swagger)
 async def delete_stage(
     stage_id: int,
     user: CurrentUserDep,

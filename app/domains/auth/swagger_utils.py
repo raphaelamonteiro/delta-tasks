@@ -24,9 +24,26 @@ register_responses: dict[int | str, dict[str, Any]] = {
 
 register_user_swagger: dict[str, Any] = {
     "summary": "Registrar usuário",
-    "description": ( "Cria uma nova conta de usuário. " "Retorna 409 se o e-mail já estiver em uso."),
+    "description": (
+        "Cria uma nova conta de usuário. Retorna 409 se o e-mail já estiver em uso. "
+        "Passo 2 do fluxo de demonstração: registra o usuário que será adicionado ao "
+        "projeto — guarde o `id` retornado para o endpoint de membros."
+    ),
     "status_code": status.HTTP_201_CREATED,
     "response_model": RegisterUserResponse,
+    "openapi_extra": {
+        "requestBody": {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "name": "Bruno Lima",
+                        "email": "bruno.lima@example.com",
+                        "password": "Sup3rSecret!",
+                    }
+                }
+            }
+        }
+    },
     "responses": register_responses,
 }
 
@@ -34,8 +51,23 @@ login_swagger: dict[str, Any] = {
     "summary": "Log in",
     "description": (
         "Autentica via e-mail/senha e define cookies HttpOnly de access e refresh token. "
-        "Retorna 401 para credenciais inválidas ou conta inativa, sem revelar qual verificação falhou."),
+        "Retorna 401 para credenciais inválidas ou conta inativa, sem revelar qual verificação falhou. "
+        "Passo 1 do fluxo de demonstração: o exemplo usa o admin criado pelo seed, que "
+        "pode registrar usuários e será o dono do projeto criado a seguir."
+    ),
     "response_model": AuthenticatedUser,
+    "openapi_extra": {
+        "requestBody": {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "email": "admin@deltatask.local",
+                        "password": "change-me-please",
+                    }
+                }
+            }
+        }
+    },
     "responses": {
         200: {"description": "Autenticado; cookies de autenticação definidos."},
         401: {"description": "Credenciais inválidas ou conta inativa."},
@@ -81,6 +113,18 @@ change_password_swagger: dict[str, Any] = {
         "Retorna 401 se a senha atual estiver incorreta, ou 400 se a nova senha for inválida "
         "ou igual à atual."),
     "status_code": status.HTTP_204_NO_CONTENT,
+    "openapi_extra": {
+        "requestBody": {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "current_password": "Sup3rSecret!",
+                        "new_password": "N0vaSenhaF0rte!",
+                    }
+                }
+            }
+        }
+    },
      "responses": {
         204: {"description": "Senha alterada com sucesso."},
         400: {"description": "Nova senha inválida."},
