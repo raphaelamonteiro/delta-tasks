@@ -6,7 +6,10 @@ from app.domains.users.schemas import UserListResponse, UserResponse
 
 list_users_swagger: dict[str, Any] = {
     "summary": "Lista usuários",
-    "description": "Retorna uma lista paginada de usuários.",
+    "description": (
+        "Retorna uma lista paginada de usuários. Útil no fluxo de demonstração para "
+        "localizar o `id` do usuário registrado (passo 2) caso não o tenha guardado."
+    ),
     "response_model": UserListResponse,
     "responses": {
         200: {"description": "Usuários listados com sucesso."},
@@ -25,10 +28,25 @@ get_user_swagger: dict[str, Any] = {
 
 update_user_swagger: dict[str, Any] = {
     "summary": "Atualizar usuário",
-    "description": ( "Atualiza parcialmente um usuário. "
-    "Retorna 409 se o novo e-mail já estiver em uso."),
-
+    "description": (
+        "Atualiza parcialmente um usuário. Retorna 409 se o novo e-mail já estiver em uso. "
+        "Restrito a administradores. Passo 6 do fluxo de demonstração: use no path o "
+        "`user_id` do register (passo 2) para ajustar o perfil do usuário; envie apenas "
+        "os campos que deseja alterar."
+    ),
     "response_model": UserResponse,
+    "openapi_extra": {
+        "requestBody": {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "name": "Bruno Lima Souza",
+                        "is_active": True,
+                    }
+                }
+            }
+        }
+    },
     "responses": {
         200: {"description": "Usuário atualizado com sucesso."},
         404: {"description": "Usuário não encontrado."},
