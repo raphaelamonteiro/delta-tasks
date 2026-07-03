@@ -41,7 +41,13 @@ async def create_task( dto: CreateTaskDTO,
     user: CurrentUserDep,
     service: TaskServiceDep) -> TaskResponse:
     _require_project_write_access(dto.project_id, user)
-    task = await service.create_task(user.id, dto)
+    try:
+        task = await service.create_task(user.id, dto)
+    except StageNotInProjectError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The column does not belong to the task's project.",
+        ) from exc
     return TaskResponse.model_validate(task)
 
 @tasks_router.get("/{task_id}/history", **get_task_history_swagger)
