@@ -4,8 +4,13 @@ from app.db.models import ProjectRole
 from app.domains.auth.dependencies import CurrentUserDep, get_current_user
 from app.domains.auth.principal import CurrentUser
 from app.domains.stages.dependencies import StageServiceDep
-from app.domains.stages.exceptions import StageNotFoundError
-from app.domains.stages.schemas import CreateStageDTO, StageResponse, UpdateStageDTO
+from app.domains.stages.exceptions import InvalidStageOrderError, StageNotFoundError
+from app.domains.stages.schemas import (
+    CreateStageDTO,
+    ReorderStagesDTO,
+    StageResponse,
+    UpdateStageDTO,
+)
 
 stages_router = APIRouter(
     prefix="/stages",
@@ -64,6 +69,24 @@ async def list_project_stages(
 ) -> list[StageResponse]:
     _require_member(project_id, user)
     stages = await service.list_stages(project_id)
+    return [StageResponse.model_validate(stage) for stage in stages]
+
+
+@stages_router.put("/project/{project_id}/reorder", response_model=list[StageResponse])
+async def reorder_stages(
+    project_id: int,
+    dto: ReorderStagesDTO,
+    user: CurrentUserDep,
+    service: StageServiceDep,
+) -> list[StageResponse]:
+    _require_owner(project_id, user)
+    try:
+        stages = await service.reorder_stages(project_id, dto.stage_ids)
+    except InvalidStageOrderError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="stage_ids must contain exactly the ids of the project's columns.",
+        ) from exc
     return [StageResponse.model_validate(stage) for stage in stages]
 
 
